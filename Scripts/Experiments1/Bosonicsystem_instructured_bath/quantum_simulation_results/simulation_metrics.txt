@@ -1,0 +1,22 @@
+       OPEN SYSTEM DYNAMICS VALIDATION METRICS           
+--- ENVIRONMENT REGIME: Sub-Ohmic (zeta=0.5) ---
+Max Trace Deviation from 1.0: 3.47e-03 (Target: < 1e-4)
+Max Hermiticity Metric Error: 5.28e-04 (Target: < 1e-4)
+Final Step Calculated Purity: 0.6220
+Final Expected Population Z:  -0.5009
+---------------------------------------------------------
+
+--- ENVIRONMENT REGIME: Ohmic (zeta=1.0) ---
+Max Trace Deviation from 1.0: 2.09e-03 (Target: < 1e-4)
+Max Hermiticity Metric Error: 1.27e-04 (Target: < 1e-4)
+Final Step Calculated Purity: 0.6872
+Final Expected Population Z:  -0.6153
+---------------------------------------------------------
+
+--- ENVIRONMENT REGIME: Super-Ohmic (zeta=3.0) ---
+Max Trace Deviation from 1.0: 1.32e-03 (Target: < 1e-4)
+Max Hermiticity Metric Error: 3.21e-05 (Target: < 1e-4)
+Final Step Calculated Purity: 0.5067
+Final Expected Population Z:  0.1267
+---------------------------------------------------------
+
