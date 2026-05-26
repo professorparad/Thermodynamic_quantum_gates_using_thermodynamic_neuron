@@ -1,0 +1,49 @@
+# Repository: Autonomous Quantum Thermal Machines & Thermodynamic Computing
+
+This repository contains numerical implementations for studying open quantum systems, non-Markovian environmental dynamics, and autonomous thermodynamic logic gates. The code scales from standard spin-boson models to specialized tensor network architectures (**OQuPy/TEMPO**) and exact replication of the "thermodynamic neuron" perceptron framework.
+## 📂 Code Files Overview
+
+The repository consists of four distinct simulation components. Together, they demonstrate how to model open quantum systems from a basic single-qubit scenario up to advanced, multi-reservoir autonomous quantum logic networks.
+
+---
+
+### 1. `boson_spin_boson.py`
+* **Concept:** Models a single open two-level system (qubit) strongly coupled to a highly structured, non-Markovian bosonic environment.
+* **Physics:** Implements an Ohmic spectral density with an exponential high-frequency cutoff:
+  $$J(\omega) = 2 \alpha \omega e^{-\omega/\omega_c}$$
+* **Method:** Replaces memoryless Markov approximations by utilizing the **TEMPO** (Time-Evolving Matrix Product Operator) algorithm via the `oqupy.tempo_compute` engine to efficiently track environmental influence histories.
+* **Validation & Metrics:** Tracks trace preservation ($\text{Tr}(\rho) = 1$), matrix Hermiticity ($\rho = \rho^\dagger$), and state purity degradation ($\text{Tr}(\rho^2)$) to ensure numerical validity throughout the time evolution.
+
+---
+
+### 2. `fermionic_quantum_dot.py`
+* **Concept:** Shifts the environment from bosonic noise fields to a setting involving physical **particle exchange and charge transport**.
+* **Physics:** Implements the **Single Impurity Anderson Model (SIAM)** by simulating an isolated quantum dot level connected to a macroscopic metallic electron lead. The bath statistics are governed strictly by the Pauli exclusion principle and a Fermi-Dirac distribution.
+* **Method:** Utilizes OQuPy's specialized `CustomFermionicBath` framework, mapping the environment's Grassmann anti-commutation relations into contractible tensor networks.
+* **Validation & Metrics:** Verifies that the particle occupation expectation value $\langle n \rangle$ stays physically bounded within $[0.0, 1.0]$ and asymptotically relaxes toward the analytical Fermi-Dirac thermal equilibrium level.
+
+---
+
+### 3. `non_markovian_nor_gate.py`
+* **Concept:** Implements an autonomous thermodynamic **NOR Gate** operating under strong coupling and deep memory backflow regimes.
+* **Physics:** Investigates the gate's logic relaxation trajectories across three distinct power-law environmental memory profiles governed by the exponent $\zeta$:
+  * **Sub-Ohmic ($\zeta = 0.5$):** Heavy non-Markovian memory holding onto deep past states.
+  * **Ohmic ($\zeta = 1.0$):** Linear dissipative decay profile.
+  * **Super-Ohmic ($\zeta = 3.0$):** Fast phononic mode environment behaving closer to a Markovian system.
+* **Validation & Metrics:** Confirms that only the logical input state $(0,0)$ shifts the energy landscape to allow the output qubit to relax into its logic `1` state.
+
+---
+
+### 4. `thermodynamic_neuron_replication.py`
+* **Concept:** Exact, literal replication of the weak-coupling analytical framework established in *Lipka-Bartosik, Perarnau-Llobet, & Brunner (2025)* (`baseline_gate_paper.pdf`).
+* **Physics:** Replaces the infinite baths with a **finite-size output reservoir** whose inverse temperature $\beta_z$ is adjusted dynamically over time by the quantum machine's local heat currents ($j_z$):
+  $$\frac{d\beta_z(t)}{dt} = -\frac{\beta_z(t)^2}{C} j_z(t)$$
+* **Replication Targets:** 1. Recreates **Figure 3B** by tracking the steady-state inverse temperature output ($\beta_z^\infty$) of an autonomous **NOT Gate** across a parameter sweep of collector energies $\epsilon_1$.
+  2. Synthesizes a multi-input **NOR Truth Table**, providing a physical verification that the autonomous thermal machine functions mathematically as a linearly separable machine-learning **perceptron**.
+
+## 🛠️ Installation & Dependencies
+
+To run these simulations, you will need `Python 3.8+` along with standard scientific computing libraries and the specialized **OQuPy** package for time-evolving matrix product operator simulations.
+
+```bash
+pip install numpy matplotlib oqupy
