@@ -8,7 +8,7 @@ os.makedirs(output_dir, exist_ok=True)
 metrics_file_path = os.path.join(output_dir, "simulation_metrics.txt")
 
 with open(metrics_file_path, "w") as f_out:
-    f_out.write("       OPEN SYSTEM DYNAMICS VALIDATION METRICS           \n")
+    f_out.write("  Validation Metrics           \n")
 
 omega = 1.0
 omega_cutoff = 3.0
@@ -36,7 +36,7 @@ collected_populations = {}
 collected_purities = {}
 
 for name, zeta_val in regimes.items():
-    print(f"Running simulation configuration: {name}...")
+    print(f"{name}...")
     
     spectral_density = oqupy.PowerLawSD(
         alpha=alpha, 
@@ -76,14 +76,14 @@ for name, zeta_val in regimes.items():
     max_trace_deviation = np.max(np.abs(np.array(traces) - 1.0))
     max_hermitian_error = np.max(hermitian_errors)
     
-    print(f" -> Max Trace Dev: {max_trace_deviation:.2e} | Max Hermiticity Error: {max_hermitian_error:.2e}\n")
+    print(f" max trace deviation: {max_trace_deviation:.2e} , max hermiticity error : {max_hermitian_error:.2e}\n")
     
     with open(metrics_file_path, "a") as f_out:
-        f_out.write(f"--- ENVIRONMENT REGIME: {name} ---\n")
-        f_out.write(f"Max Trace Deviation from 1.0: {max_trace_deviation:.2e} (Target: < 1e-4)\n")
-        f_out.write(f"Max Hermiticity Metric Error: {max_hermitian_error:.2e} (Target: < 1e-4)\n")
-        f_out.write(f"Final Step Calculated Purity: {purities[-1]:.4f}\n")
-        f_out.write(f"Final Expected Population Z:  {population_z[-1]:.4f}\n")
+        f_out.write(f"environment {name} ---\n")
+        f_out.write(f"max trace deviation from 1.0: {max_trace_deviation:.2e} (Target: < 1e-4)\n")
+        f_out.write(f"max hermiticity metric rrror: {max_hermitian_error:.2e} (Target: < 1e-4)\n")
+        f_out.write(f"final step calculated purity: {purities[-1]:.4f}\n")
+        f_out.write(f"final expected population Z:  {population_z[-1]:.4f}\n")
         f_out.write("-" * 57 + "\n\n")
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5.5))
