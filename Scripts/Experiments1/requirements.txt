@@ -1,0 +1,11 @@
+oqupy 
+numpy
+qiskit 
+pennylane
+matplotlib
+seaborn 
+quimb
+torch
+pandas
+jupyter
+scikit-learn
