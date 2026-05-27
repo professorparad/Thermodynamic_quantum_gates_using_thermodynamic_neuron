@@ -26,9 +26,9 @@ sys = oqupy.System(H_s)
 interaction_operator = 0.5 * oqupy.operators.sigma("x")
 initial_density_matrix_state_qubit = oqupy.operators.spin_dm("z+")
 
-dt = 0.1
+dt = 0.05
 end_time = 10.0
-truncation_tolerance = 1.0e-5
+truncation_tolerance = 1.0e-7
 temporary_config = oqupy.TempoParameters(dt=dt, epsrel=truncation_tolerance)
 
 collected_times = {}
