@@ -41,7 +41,7 @@ The repository consists of four distinct simulation components. Together, they d
 * **Replication Targets:** 1. Recreates **Figure 3B** by tracking the steady-state inverse temperature output ($\beta_z^\infty$) of an autonomous **NOT Gate** across a parameter sweep of collector energies $\epsilon_1$.
   2. Synthesizes a multi-input **NOR Truth Table**, providing a physical verification that the autonomous thermal machine functions mathematically as a linearly separable machine-learning **perceptron**.
 
-# Thermodyanmic Floquet Engineered NOT Gate - Analogous to CMOS voltage regulator.
+# Thermodyanmic Floquet Engineered NOT Gate - Analogous to CMOS voltage inverter .
 Also this repo contains an extension to numerical methods related to the extension of the non markovian thermodynamic gate. That is a thermodynamic gate with floquet buffers acting as gate isolation between the reservoir and the collector qubits and a feedforward floquet sublayer in the modulator part providing and preventing logical fidelity error generating a thermodynamic not gate analogous to real life CMOS voltage inverter.
 This extension would be numerically quite heavy because engineering non markovian floquet enginneered heat inverter would be need huge computation so remember to run codes in parts when pulling from this repo instead of running scripts directly and remeber to use GPU rendering or else your system might die !!!
 
