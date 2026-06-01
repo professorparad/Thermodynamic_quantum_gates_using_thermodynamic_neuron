@@ -1,6 +1,6 @@
 # Repository: Autonomous Quantum Thermal Machines & Thermodynamic Computing
 
-This repository contains numerical implementations for studying open quantum systems, non-Markovian environmental dynamics, and autonomous thermodynamic logic gates. The code scales from standard spin-boson models to specialized tensor network architectures (**OQuPy/TEMPO**) and exact replication of the "thermodynamic neuron" perceptron framework.
+This repository contains numerical implementations for studying open quantum systems, non-Markovian environmental dynamics, and autonomous thermodynamic logic gates. The code scales from standard spin-boson models to specialized tensor network architectures  using libraries like (**OQuPy/TEMPO , QUTIP , ITENSOR**) and exact replication of the "thermodynamic neuron" perceptron framework.
 ## 📂 Code Files Overview
 
 The repository consists of four distinct simulation components. Together, they demonstrate how to model open quantum systems from a basic single-qubit scenario up to advanced, multi-reservoir autonomous quantum logic networks.
@@ -40,6 +40,9 @@ The repository consists of four distinct simulation components. Together, they d
   $$\frac{d\beta_z(t)}{dt} = -\frac{\beta_z(t)^2}{C} j_z(t)$$
 * **Replication Targets:** 1. Recreates **Figure 3B** by tracking the steady-state inverse temperature output ($\beta_z^\infty$) of an autonomous **NOT Gate** across a parameter sweep of collector energies $\epsilon_1$.
   2. Synthesizes a multi-input **NOR Truth Table**, providing a physical verification that the autonomous thermal machine functions mathematically as a linearly separable machine-learning **perceptron**.
+
+
+Also this repo contains an extension to numerical methods related to the extension of the non markovian thermodynamic gate. That is a thermodynamic gate with floquet buffers acting as gate isolation between the reservoir and the collector qubits and a feedforward floquet sublayer in the modulator part providing and preventing logical fidelity error generating a thermodynamic not gate analogous to real life CMOS voltage inverter.
 
 ## 🛠️ Installation & Dependencies
 
