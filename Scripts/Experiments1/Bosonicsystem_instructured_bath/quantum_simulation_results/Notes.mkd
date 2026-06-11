@@ -1,6 +1,6 @@
-Notes:
-What are the metrics and there physical and mathematical interpretation: 
-1. ** Max trace deviation:**
+# Notes:
+## What are the metrics and there physical and mathematical interpretation: 
+1. **Max trace deviation:**
 The trace of the density matrix is essentially the probability of the total system so the density matrix elements represent the populations of the systems which are the absolute probabilities of finding the system in the each of its possible state. So the total probability is given by the trace of the density matrix and the net probability should be = 1 so the max trace deviation is shows the how much the density matrix is deviated from the its physically required value of 1.0 so mathematically it calculates:
 max trace deviation = $$\max_t |\mathrm{Tr}(\rho(t)) - 1.0|$$. As the OQUPY library is used TEMPO algorithm i.e time evolution matrix product operator so it has to truncate and compress environmental memory data at every time step using SVD as a result of which the typical metric for this quantity is that:
 1. if the max trace deviation is very small < 10e-5: it means the numerical simulation is stable and the approximations made during the tensor compression are not breaking the laws of quantumn mechanics and thermodynamics
