@@ -1,0 +1,14 @@
+e0 = 2.0
+e1 = 1.5
+ez = e0 - e1
+g = 0.005
+gamma0 = 0.001
+gamma1 = 0.001
+gammaz = 0.001
+beta0 = 1.5
+betaz = 1.0
+mu = 1.0
+mu_p = 0.3
+beta_r = 2.0
+C_out = 10.0
+sigma_tol = 1e-10

@@ -1,0 +1,5 @@
+# Thermodynamic Neuron Analysis
+
+## Rigorous Results
+
+Generated figure showing thermodynamic quantum gates analysis.

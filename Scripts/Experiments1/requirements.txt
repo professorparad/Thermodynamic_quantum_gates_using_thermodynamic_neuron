@@ -9,3 +9,5 @@ torch
 pandas
 jupyter
 scikit-learn
+qutip
+scipy

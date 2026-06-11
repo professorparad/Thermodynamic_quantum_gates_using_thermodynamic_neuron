@@ -46,4 +46,4 @@ The repository consists of four distinct simulation components. Together, they d
 To run these simulations, you will need `Python 3.8+` along with standard scientific computing libraries and the specialized **OQuPy** package for time-evolving matrix product operator simulations.
 
 ```bash
-pip install numpy matplotlib oqupy
+pip install numpy matplotlib oqupy qutip
