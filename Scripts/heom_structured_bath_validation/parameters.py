@@ -10,6 +10,7 @@ class HEOMValidationParameters:
     system_buffer_coupling: float = 0.08
     drive_amplitude: float = 0.35
     drive_frequency: float = 1.2
+    drive_phase: float = 0.0
 
     bath_temperature: float = 0.75
     reorganization_energy: float = 0.045

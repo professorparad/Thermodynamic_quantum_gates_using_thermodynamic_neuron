@@ -36,7 +36,7 @@ def _drive_power(state, time, params):
     op = (
         -params.drive_amplitude
         * params.drive_frequency
-        * np.sin(params.drive_frequency * time)
+        * np.sin(params.drive_frequency * time + params.drive_phase)
         * sx_f
     )
     return float(np.real((op * state).tr()))
@@ -52,11 +52,28 @@ def _bath(coupling_operator, params):
     )
 
 
+def _initial_ket(label):
+    ground = qt.basis(2, 0)
+    excited = qt.basis(2, 1)
+    states = {
+        "ground": ground,
+        "excited": excited,
+        "plus": (ground + excited).unit(),
+        "minus": (ground - excited).unit(),
+        "plus_i": (ground + 1j * excited).unit(),
+        "minus_i": (ground - 1j * excited).unit(),
+    }
+    try:
+        return states[label]
+    except KeyError as exc:
+        raise ValueError(f"Unknown initial-state label: {label}") from exc
+
+
 def _run_direct(params, initial_label, depth):
     sx, sz = qt.sigmax(), qt.sigmaz()
     hamiltonian = 0.5 * params.epsilon_s * sz
     bath = _bath(sx, params)
-    rho0_ket = qt.basis(2, 0) if initial_label == "ground" else qt.basis(2, 1)
+    rho0_ket = _initial_ket(initial_label)
     rho0 = rho0_ket * rho0_ket.dag()
     tlist = np.linspace(0.0, params.t_end, params.num_steps + 1)
     solver = HEOMSolver(
@@ -82,12 +99,12 @@ def _run_buffered(params, initial_label, depth):
     )
     h_drive = params.drive_amplitude * sx_f
 
-    def drive_coeff(t, args):
-        return np.cos(params.drive_frequency * t)
+    def drive_coeff(t, **kwargs):
+        return np.cos(params.drive_frequency * t + params.drive_phase)
 
     hamiltonian = qt.QobjEvo([h_static, [h_drive, drive_coeff]])
     bath = _bath(sx_f, params)
-    system_ket = qt.basis(2, 0) if initial_label == "ground" else qt.basis(2, 1)
+    system_ket = _initial_ket(initial_label)
     buffer_ket = qt.basis(2, 0)
     psi0 = qt.tensor(system_ket, buffer_ket)
     rho0 = psi0 * psi0.dag()
@@ -181,10 +198,23 @@ def _integrate_work(rows):
     return float(np.trapz(power, times))
 
 
+def _integrate_power_components(rows, initial_state="excited"):
+    selected = [row for row in rows if row["initial_state"] == initial_state]
+    if len(selected) < 2:
+        return {"net": 0.0, "positive": 0.0, "absolute": 0.0}
+    times = np.array([row["time"] for row in selected], dtype=float)
+    power = np.array([row["drive_power"] for row in selected], dtype=float)
+    return {
+        "net": float(np.trapz(power, times)),
+        "positive": float(np.trapz(np.maximum(power, 0.0), times)),
+        "absolute": float(np.trapz(np.abs(power), times)),
+    }
+
+
 def _write_csv(path, rows, headers):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=headers)
+        writer = csv.DictWriter(handle, fieldnames=headers, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     return path

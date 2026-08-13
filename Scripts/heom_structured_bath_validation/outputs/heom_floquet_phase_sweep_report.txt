@@ -7,11 +7,11 @@ Robust buffered points (D_buffer >= 0.75 and gain > 0): 229
 
 Best absolute HEOM gain:
 - A=0.55, Omega=1.2, gSF=0.04, lambda=0.075, cutoff=0.8
-  D_direct=0.353784, D_buffer=0.977156, gain=0.623372, |W|=0.539063, gain/|W|=1.156399, label=efficient_gain
+  D_direct=0.353784, D_buffer=0.977156, gain=0.623372, Wnet=-0.539063, Win+=0.010179, Wabs=0.559420, gain/Win+=61.243502, gain/Wabs=1.114318, label=efficient_gain
 
-Best finite gain per drive-work:
-- A=0.55, Omega=1.8, gSF=0.08, lambda=0.075, cutoff=3.0
-  D_direct=0.594519, D_buffer=0.883686, gain=0.289168, |W|=0.000140, gain/|W|=2065.916503, label=efficient_gain
+Best driven gain per absolute work throughput:
+- A=0.2, Omega=0.8, gSF=0.04, lambda=0.075, cutoff=0.8
+  D_direct=0.353784, D_buffer=0.968718, gain=0.614933, Wnet=-0.088841, Win+=0.000992, Wabs=0.090825, gain/Win+=619.899618, gain/Wabs=6.770543, label=efficient_gain
 
 MPS dimension at best-gain point:
 - mps_direct_subsystem L=2: chi=2, Smax=0.9987, D=0.413330
@@ -26,4 +26,4 @@ MPS dimension at best-gain point:
 - mps_floquet_buffer L=6: chi=6, Smax=0.2934, D=0.946977
 
 Interpretation:
-The direct branch is still the lower external-energy architecture because it has no AC drive. The Floquet buffer is valuable when distinguishability/noise margin is the priority: many HEOM points give positive gain, and the best-gain point remains modest in MPS bond dimension. Practically this is a power-for-fidelity tradeoff, not a free lunch.
+The direct branch is still the lower external-energy architecture because it has no AC drive. Absolute work throughput is used for conservative efficiency so cancellation of positive and negative power cannot create a false near-zero cost. Positive supplied work is retained separately as an ideal work-recovery bound. The Floquet buffer is valuable when distinguishability/noise margin is the priority: many HEOM points give positive gain, and the best-gain point remains modest in MPS bond dimension. Practically this is a power-for-fidelity tradeoff, not a free lunch.

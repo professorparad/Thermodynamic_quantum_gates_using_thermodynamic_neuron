@@ -14,7 +14,7 @@ import numpy as np
 
 from main import (
     _collect_dynamics,
-    _integrate_work,
+    _integrate_power_components,
     _run_buffered,
     _run_direct,
     _system_state,
@@ -27,7 +27,7 @@ from scaling import run_mps_dimension_scaling
 def _write_csv(path, rows, headers):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=headers)
+        writer = csv.DictWriter(handle, fieldnames=headers, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     return path
@@ -90,9 +90,19 @@ def run_heom_phase_sweep():
                         buffer_d, dynamics_rows, buffer_runtime = _run_pair(
                             _run_buffered, params, depth, buffered=True
                         )
-                        work = abs(_integrate_work(dynamics_rows))
+                        power = _integrate_power_components(dynamics_rows)
                         gain = buffer_d - direct_d
-                        efficiency = gain / work if work > 1e-12 else (np.inf if gain > 0 else 0.0)
+                        supplied_work = power["positive"]
+                        efficiency = (
+                            gain / supplied_work
+                            if supplied_work > 1e-12
+                            else (np.inf if gain > 0 else 0.0)
+                        )
+                        conservative_efficiency = (
+                            gain / power["absolute"]
+                            if power["absolute"] > 1e-12
+                            else (np.inf if gain > 0 else 0.0)
+                        )
                         rows.append(
                             {
                                 "drive_amplitude": amp,
@@ -104,22 +114,27 @@ def run_heom_phase_sweep():
                                 "direct_trace_distance": direct_d,
                                 "buffered_trace_distance": buffer_d,
                                 "trace_distance_gain": gain,
-                                "drive_work_proxy_abs": work,
-                                "gain_per_drive_work": efficiency,
+                                "drive_work_net": power["net"],
+                                "drive_work_positive": supplied_work,
+                                "drive_work_absolute": power["absolute"],
+                                "gain_per_positive_work": efficiency,
+                                "gain_per_absolute_work": conservative_efficiency,
                                 "direct_runtime_seconds": direct_runtime,
                                 "buffered_runtime_seconds": buffer_runtime,
-                                "label": _label(gain, work),
+                                "label": _label(gain, power["absolute"], amp),
                             }
                         )
     return rows
 
 
-def _label(gain, work):
+def _label(gain, absolute_work, amplitude):
     if gain <= 0:
         return "buffer_hurts"
-    if work < 1e-10:
-        return "free_gain"
-    if gain / work >= 1.0:
+    if amplitude == 0.0:
+        return "passive_buffer_gain"
+    if absolute_work < 1e-12:
+        return "zero_resolved_work"
+    if gain / absolute_work >= 1.0:
         return "efficient_gain"
     return "costly_gain"
 
@@ -127,8 +142,17 @@ def _label(gain, work):
 def summarize_phase_sweep(rows):
     positive = [row for row in rows if row["trace_distance_gain"] > 0]
     best_gain = max(rows, key=lambda row: row["trace_distance_gain"])
-    finite_eff = [row for row in positive if np.isfinite(row["gain_per_drive_work"])]
-    best_eff = max(finite_eff, key=lambda row: row["gain_per_drive_work"]) if finite_eff else best_gain
+    finite_eff = [
+        row
+        for row in positive
+        if row["drive_amplitude"] > 0
+        and np.isfinite(row["gain_per_absolute_work"])
+    ]
+    best_eff = (
+        max(finite_eff, key=lambda row: row["gain_per_absolute_work"])
+        if finite_eff
+        else best_gain
+    )
     robust = [row for row in rows if row["buffered_trace_distance"] >= 0.75 and row["trace_distance_gain"] > 0]
     return {
         "total_points": len(rows),
@@ -155,13 +179,13 @@ def _plot_phase_sweep(rows, mps_rows, output_path):
     import matplotlib.pyplot as plt
 
     gains = np.array([row["trace_distance_gain"] for row in rows], dtype=float)
-    works = np.array([row["drive_work_proxy_abs"] for row in rows], dtype=float)
+    works = np.array([row["drive_work_absolute"] for row in rows], dtype=float)
     amps = np.array([row["drive_amplitude"] for row in rows], dtype=float)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.4))
     sc = axes[0].scatter(works, gains, c=amps, cmap="viridis", s=32, alpha=0.8)
     axes[0].axhline(0.0, color="black", linewidth=0.8)
-    axes[0].set_xlabel("|drive-work proxy|")
+    axes[0].set_xlabel("absolute drive-work throughput")
     axes[0].set_ylabel("buffered - direct trace distance")
     axes[0].set_title("HEOM gain versus work")
     fig.colorbar(sc, ax=axes[0], label="drive amplitude")
@@ -204,7 +228,7 @@ def _write_report(path, summary, mps_rows):
         handle.write(f"Robust buffered points (D_buffer >= 0.75 and gain > 0): {summary['robust_buffer_points']}\n\n")
         handle.write("Best absolute HEOM gain:\n")
         _write_row(handle, best_gain)
-        handle.write("\nBest finite gain per drive-work:\n")
+        handle.write("\nBest driven gain per absolute work throughput:\n")
         _write_row(handle, best_eff)
         handle.write("\nMPS dimension at best-gain point:\n")
         for row in mps_rows:
@@ -217,7 +241,10 @@ def _write_report(path, summary, mps_rows):
         handle.write("\nInterpretation:\n")
         handle.write(
             "The direct branch is still the lower external-energy architecture because it has no "
-            "AC drive. The Floquet buffer is valuable when distinguishability/noise margin is the "
+            "AC drive. Absolute work throughput is used for conservative efficiency so cancellation "
+            "of positive and negative power cannot create a false near-zero cost. Positive supplied "
+            "work is retained separately as an ideal work-recovery bound. The Floquet buffer is valuable "
+            "when distinguishability/noise margin is the "
             "priority: many HEOM points give positive gain, and the best-gain point remains modest "
             "in MPS bond dimension. Practically this is a power-for-fidelity tradeoff, not a free lunch.\n"
         )
@@ -234,8 +261,11 @@ def _write_row(handle, row):
         f"  D_direct={row['direct_trace_distance']:.6f}, "
         f"D_buffer={row['buffered_trace_distance']:.6f}, "
         f"gain={row['trace_distance_gain']:.6f}, "
-        f"|W|={row['drive_work_proxy_abs']:.6f}, "
-        f"gain/|W|={row['gain_per_drive_work']:.6f}, label={row['label']}\n"
+        f"Wnet={row['drive_work_net']:.6f}, "
+        f"Win+={row['drive_work_positive']:.6f}, "
+        f"Wabs={row['drive_work_absolute']:.6f}, "
+        f"gain/Win+={row['gain_per_positive_work']:.6f}, "
+        f"gain/Wabs={row['gain_per_absolute_work']:.6f}, label={row['label']}\n"
     )
 
 
@@ -258,8 +288,11 @@ def main():
             "direct_trace_distance",
             "buffered_trace_distance",
             "trace_distance_gain",
-            "drive_work_proxy_abs",
-            "gain_per_drive_work",
+            "drive_work_net",
+            "drive_work_positive",
+            "drive_work_absolute",
+            "gain_per_positive_work",
+            "gain_per_absolute_work",
             "direct_runtime_seconds",
             "buffered_runtime_seconds",
             "label",

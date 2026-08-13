@@ -1,0 +1,8 @@
+parameter,standardized_linear_effect_on_gain,absolute_effect_rank
+reorganization_energy,0.047365937293064014,1
+bath_temperature,0.0255397233801289,2
+bath_cutoff,0.011003282784532699,3
+system_buffer_coupling,-0.007462187339559028,4
+drive_amplitude,0.0006157500964102704,5
+drive_phase,-0.0004065821476533643,6
+drive_frequency,-0.0001410408813556259,7

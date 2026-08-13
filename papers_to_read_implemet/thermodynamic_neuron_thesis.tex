@@ -1222,9 +1222,11 @@ $W_{\mathrm{drive}}=0$. It is therefore the lower-energy device if one
 counts only externally supplied work. Its drawback is weaker logical
 separation: in the HEOM depth--4 scaling run $D_{\mathrm{direct}}=0.522348$.
 The Floquet-buffered subsystem consumes clock/drive work
-$|W_{\mathrm{drive}}|\simeq0.358182$ and has
-$D_{\mathrm{buffer}}=0.855945$, giving a work-per-distinguishability proxy
-$|W_{\mathrm{drive}}|/D_{\mathrm{buffer}}\simeq0.418464$. Thus the answer
+$W_{\rm net}=-0.406107$, $W_+=0.038648$, and
+$W_{\rm abs}=0.483403$, and has
+$D_{\mathrm{buffer}}=0.855945$.  The conservative
+work-throughput-per-distinguishability proxy is therefore
+$W_{\rm abs}/D_{\mathrm{buffer}}=0.564759$. Thus the answer
 to ``which uses less energy?'' is: the direct subsystem uses less external
 energy, but the buffered subsystem buys stronger isolation and readout
 distinguishability by spending drive work. The useful engineering
@@ -1261,13 +1263,27 @@ A=0.55,\quad \Omega=1.2,\quad g_{SF}=0.04,\quad
 with
 $D_{\mathrm{direct}}=0.353784$,
 $D_{\mathrm{buffer}}=0.977156$, and
-$\Delta D=0.623372$ at drive-work proxy $|W|=0.539063$. The best
-finite gain-per-drive-work point is
-$A=0.55,\Omega=1.8,g_{SF}=0.08,\lambda=0.075,\gamma_c=3.0$, with
-$D_{\mathrm{direct}}=0.594519$, $D_{\mathrm{buffer}}=0.883686$,
-$\Delta D=0.289168$, and $|W|=1.40\times10^{-4}$. The very large
-gain/work ratio at that point should be treated as a screened candidate
-for refinement rather than a universal efficiency law.
+$\Delta D=0.623372$.  The drive-power sign changes during the cycle, so
+three distinct work quantities are retained:
+\begin{equation}
+ W_{\rm net}=\int_0^{t_f}P(t)\d t,\qquad
+ W_{+}=\int_0^{t_f}\max[P(t),0]\d t,\qquad
+ W_{\rm abs}=\int_0^{t_f}|P(t)|\d t .
+ \label{eq:work-accounting}
+\end{equation}
+Here $W_{\rm net}$ permits ideal work recovery, $W_+$ counts energy
+supplied to the quantum system, and $W_{\rm abs}$ is the conservative
+cycle-throughput proxy when neither sign of power is assumed free.  At
+the best-gain point these are
+$W_{\rm net}=-0.539063$, $W_+=0.010179$, and
+$W_{\rm abs}=0.559420$, giving
+$\Delta D/W_{\rm abs}=1.114318$.  This correction matters: taking only
+$|W_{\rm net}|$ can produce a false near-zero cost through cancellation.
+The best driven point under the conservative ratio is
+$A=0.2,\Omega=0.8,g_{SF}=0.04,\lambda=0.075,\gamma_c=0.8$, with
+$D_{\mathrm{buffer}}=0.968718$, $\Delta D=0.614933$,
+$W_{\rm abs}=0.090825$, and
+$\Delta D/W_{\rm abs}=6.770543$.
 
 \begin{figure}[H]\centering
 \includegraphics[width=0.92\linewidth]{heom_floquet_phase_summary.png}
@@ -1290,10 +1306,181 @@ gain/work over drive amplitude and system--buffer coupling.}
 \includegraphics[width=0.68\linewidth]{heom_energy_fidelity_frontier.png}
 \caption{Energy--fidelity frontier from the HEOM phase sweep. Direct
 operation has zero external drive work; buffered operation spends
-drive-work proxy to gain output distinguishability. Marker size scales
-with buffered final distinguishability.}
+absolute drive-work throughput to gain output distinguishability. Marker
+size scales with buffered final distinguishability.}
 \label{fig:heom-energy-frontier}
 \end{figure}
+
+\paragraph{Six-state HEOM channel tomography.}
+A two-state truth-table test probes only one diameter of the Bloch sphere.
+For a genuine channel test we propagate the six Pauli eigenstates
+$\rho_{\pm j}=(I\pm\sigma_j)/2$ for $j=x,y,z$.  Linearity then reconstructs
+the action of the channel $\mathcal{E}$ without an ancilla:
+\begin{equation}
+ \mathcal{E}(I)=\mathcal{E}(\rho_{+z})+\mathcal{E}(\rho_{-z}),\qquad
+ \mathcal{E}(\sigma_j)=\mathcal{E}(\rho_{+j})-\mathcal{E}(\rho_{-j}).
+ \label{eq:six-state-reconstruction}
+\end{equation}
+The Pauli-transfer matrix and normalized Choi matrix follow as
+\begin{align}
+ R_{\mu\nu}&=\frac12\Tr[\sigma_\mu\mathcal{E}(\sigma_\nu)],
+ &
+ J_{\mathcal{E}}&=\frac14\sum_{\nu=0}^{3}
+ \mathcal{E}(\sigma_\nu)\otimes\sigma_\nu^{\mathsf T}.
+ \label{eq:ptm-choi}
+\end{align}
+Trace preservation demands $R_{0\nu}=\delta_{0\nu}$ and complete
+positivity demands $J_{\mathcal{E}}\succeq0$.  If
+$M=(R_{ij})_{i,j=1}^{3}$ is the
+Bloch block, the directional retention, unitarity, and volume contraction
+are
+\begin{equation}
+ D_j=\frac12\norm{\mathcal{E}(\rho_{+j})-\mathcal{E}(\rho_{-j})}_1,\qquad
+ u=\frac13\Tr(M^{\mathsf T}M),\qquad
+ V=|\det M|.
+ \label{eq:channel-retention}
+\end{equation}
+For a target unitary with Bloch rotation $O_U$, the average fidelity is
+\begin{equation}
+ F_{\rm avg}(U,\mathcal{E})
+ =\frac{3+\Tr(O_U^{\mathsf T}M)}{6}.
+ \label{eq:channel-average-fidelity}
+\end{equation}
+Maximizing this expression over $O_U\in SO(3)$ by the singular-value
+decomposition of $M$ separates a correctable coherent frame rotation from
+irreversible contraction.
+
+At the best-gain point, the direct channel gives
+$D_{\min}=0.353784$, $u=0.224019$, $V=0.092394$, and optimized-frame
+$F_{\rm avg}=0.731302$.  The buffered channel gives
+$D_{\min}=0.977156$, $u=0.969593$, $V=0.954637$, and optimized-frame
+$F_{\rm avg}=0.992331$.  Its uncorrected identity fidelity is only
+$0.757738$ because the off-diagonal PTM entries describe a large coherent
+rotation; calibration removes that deterministic frame error.  Both Choi
+matrices are positive at numerical precision
+($\lambda_{\min}=6.75\times10^{-2}$ direct and
+$2.37\times10^{-5}$ buffered), and both trace-preservation residuals are
+below $9\times10^{-16}$.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{heom_channel_tomography.png}
+\caption{Six-state HEOM process tomography.  The PTMs expose coherent
+rotation and irreversible contraction separately; the remaining panels
+compare directional retention, raw and calibrated average fidelity,
+unitarity, Bloch-volume contraction, and Choi positivity.}
+\label{fig:heom-channel-tomography}
+\end{figure}
+
+\paragraph{Information backflow and cancellation-safe power.}
+For any initial pair, contractivity of a CP-divisible map requires
+$\dot D(t)\le0$.  The Breuer--Laine--Piilo measure is
+\begin{equation}
+ \mathcal{N}_{\rm BLP}=\max_{\rho_1,\rho_2}
+ \int_{\dot D>0}\dot D[\rho_1(t),\rho_2(t)]\d t .
+ \label{eq:blp-measure}
+\end{equation}
+We do not claim the continuous maximization in
+Eq.~\eqref{eq:blp-measure}; summing positive increments for the three
+Pauli-antipodal pairs gives a reproducible lower bound.  It is
+$0.021490$ for direct contact and $3.38\times10^{-4}$ for the buffer.
+Thus the buffer advantage here is not caused by stronger information
+backflow.  It comes from spectral isolation: the integrated $z$-axis
+distinguishability increases from $3.07861$ to $4.95044$ while sampled
+backflow decreases.  Figure~\ref{fig:heom-backflow} also plots $P(t)$ and
+the two non-cancelling cumulative work definitions from
+Eq.~\eqref{eq:work-accounting}.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.94\linewidth]{heom_information_backflow.png}
+\caption{HEOM distinguishability, sampled BLP information backflow, and
+drive-power accounting.  Absolute throughput remains finite even when
+positive and negative work nearly cancel in the net integral.}
+\label{fig:heom-backflow}
+\end{figure}
+
+\paragraph{Readout phase and calibration uncertainty.}
+The stroboscopic experiment was repeated for $16$ uniformly spaced drive
+phases.  The gain remains in
+$[0.618890,0.623372]$ with median $0.620839$, so the selected point does
+not require phase-perfect readout.  A deterministic Latin-hypercube
+ensemble then perturbed amplitude by $\pm10\%$, frequency by $\pm5\%$,
+system--buffer coupling, reorganization energy, and bath cutoff by
+$\pm15\%$, temperature by $\pm10\%$, and phase by $\pm\pi/6$.  All
+$48/48$ HEOM samples satisfy $D_{\rm buffer}\ge0.75$ and $\Delta D>0$.
+The median gain is $0.617616$ and the empirical $5$--$95\%$ interval is
+$[0.567750,0.665942]$.  A standardized local linear fit ranks
+reorganization energy, bath temperature, and bath cutoff as the dominant
+uncertainties; this fit is a sensitivity summary, not a global surrogate
+model.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.94\linewidth]{heom_stroboscopic_phase.png}
+\caption{Stroboscopic drive-phase sensitivity of final distinguishability,
+buffer gain, and the two non-cancelling drive-work measures.}
+\label{fig:heom-stroboscopic-phase}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.94\linewidth]{heom_uncertainty_robustness.png}
+\caption{Forty-eight-point HEOM calibration-uncertainty ensemble.  The
+histogram and empirical CDF quantify gain variation; the signed effects
+rank local sensitivities; the final panel shows the robust energy--fidelity
+cloud.}
+\label{fig:heom-uncertainty}
+\end{figure}
+
+\paragraph{Two-axis numerical convergence.}
+Hierarchy depth alone is insufficient because the bath correlation
+expansion also has to converge.  We therefore scan
+$N_{\rm tier}=2,3,4$ and $N_k=1,2,3$, defining
+\begin{equation}
+ \delta_{N,K}=\max_{s\in\{0,1\}}
+ D\!\left(\rho_s^{(N,K)}(t_f),\rho_s^{(4,3)}(t_f)\right).
+ \label{eq:heom-two-axis-convergence}
+\end{equation}
+At the production setting $(N,K)=(3,2)$,
+$\delta_{3,2}=3.289\times10^{-3}$ for direct contact and
+$1.322\times10^{-4}$ for the buffered branch.  The refined result
+therefore preserves the sign and scale of the $0.623$ buffer advantage by
+a wide margin.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.88\linewidth]{heom_convergence_matrix.png}
+\caption{Joint convergence in HEOM hierarchy depth and Matsubara expansion
+order.  The upper panels show final-state trace-distance drift relative to
+$(N_{\rm tier},N_k)=(4,3)$; the lower panels report measured runtime.}
+\label{fig:heom-convergence-matrix}
+\end{figure}
+
+\begin{table}[H]
+\centering\small
+\caption{Approximations and scope limits specific to the advanced HEOM
+experiments.}
+\label{tab:advanced-heom-approximations}
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Item & What was assumed & How the claim is limited or checked \\
+\midrule
+Bath model & Drude--Lorentz spectral density represented by a finite
+Matsubara expansion. & Both hierarchy depth and Matsubara order are
+refined against $(4,3)$. \\
+Channel reconstruction & Linearity is used to reconstruct a one-qubit
+map from six Pauli eigenstates. & Choi positivity and trace preservation
+are checked numerically. \\
+BLP witness & Only the three Pauli-antipodal pairs are sampled. & The
+reported value is a lower bound, not the globally optimized BLP measure. \\
+Uncertainty ensemble & Independent bounded calibration perturbations and
+a first-order sensitivity fit. & The $48$ points establish local
+robustness only inside the stated tolerance box. \\
+Drive energy & $P(t)=\Tr[\rho(t)\partial_tH(t)]$ is a quantum work proxy.
+& $W_{\rm net}$, $W_+$, and $W_{\rm abs}$ are all reported; cryogenic
+control-line losses are not included. \\
+Gate scope & HEOM acts on the reduced output plus optional driven buffer.
+& It validates an output-stage channel, not a full six-qubit HEOM truth
+table. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \paragraph{Path integrals, Lamb shift, and QED implementation.}
 The same Drude--Lorentz spectral-density model also gives the influence

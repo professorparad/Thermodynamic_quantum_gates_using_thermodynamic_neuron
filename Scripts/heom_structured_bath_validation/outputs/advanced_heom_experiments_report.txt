@@ -1,0 +1,32 @@
+Advanced HEOM channel, memory, robustness, and convergence report
+================================================================
+
+Operating point: HEOMValidationParameters(epsilon_s=1.0, epsilon_f=1.0, system_buffer_coupling=0.04, drive_amplitude=0.55, drive_frequency=1.2, drive_phase=0.0, bath_temperature=0.75, reorganization_energy=0.075, bath_cutoff=0.8, matsubara_terms=2, direct_depth=4, buffered_depth=4, convergence_depth=5, t_end=5.0, num_steps=100)
+
+Six-state channel tomography (output-stage channel):
+- direct: Favg(I)=0.671126, Dmin=0.353784, Dmean=0.465026, Favg(calibrated)=0.731302, unitarity=0.224019, min eig(Choi)=6.746e-02, TP residual=8.990e-16
+- floquet_buffer: Favg(I)=0.757738, Dmin=0.977156, Dmean=0.984664, Favg(calibrated)=0.992331, unitarity=0.969593, min eig(Choi)=2.371e-05, TP residual=5.389e-16
+
+Sampled BLP information-backflow lower bound:
+- direct=0.021490; Floquet buffer=0.000338
+- buffer positive supplied work=0.010193; absolute throughput=0.559463
+
+Stroboscopic phase sensitivity (16 phases):
+- gain range=[0.618890, 0.623372], median=0.620839
+
+Latin-hypercube calibration uncertainty (48 points):
+- robust-pass fraction=1.000; gain median=0.617616; 5--95% interval=[0.567750, 0.665942]
+- ranked local effects on gain:
+  1. reorganization_energy: +0.047366
+  2. bath_temperature: +0.025540
+  3. bath_cutoff: +0.011003
+  4. system_buffer_coupling: -0.007462
+  5. drive_amplitude: +0.000616
+  6. drive_phase: -0.000407
+  7. drive_frequency: -0.000141
+
+Two-axis convergence audit:
+- depth=3, Nk=2 drift vs depth=4, Nk=3: direct=3.289e-03, buffer=1.322e-04
+
+Scope statement:
+These experiments validate the reduced output/output-buffer quantum channel. They do not by themselves constitute a full six-qubit thermodynamic-NOT HEOM run. The X-target fidelity is a diagnostic only; the identity-target fidelity measures state retention through this output-stage channel. The BLP value is a lower bound from three antipodal Pauli pairs, not a global optimization over all state pairs.

@@ -27,7 +27,7 @@ from parameters import HEOMValidationParameters
 def _write_csv(path, rows, headers):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=headers)
+        writer = csv.DictWriter(handle, fieldnames=headers, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     return path
@@ -186,7 +186,7 @@ def run_mps_dimension_scaling(params):
     return rows
 
 
-def energy_comparison(heom_summary_rows, mps_rows):
+def energy_comparison(base_params, heom_summary_rows, mps_rows):
     heom_direct = next(row for row in heom_summary_rows if row["backend"] == "heom_direct" and row["depth"] == 4)
     heom_buffer = next(
         row for row in heom_summary_rows if row["backend"] == "heom_floquet_buffer" and row["depth"] == 4
@@ -199,22 +199,35 @@ def energy_comparison(heom_summary_rows, mps_rows):
         row for row in mps_rows
         if row["backend"] == "mps_floquet_buffer" and row["chain_length"] == 6
     )
-    drive_work = 0.3581817510420671
+    work_params = replace(base_params, t_end=6.0, num_steps=100)
+    times, states = _run_buffered(work_params, "excited", depth=4)
+    power = np.array(
+        [_drive_power(state, current_time, work_params) for current_time, state in zip(times, states)]
+    )
+    drive_work_net = float(np.trapz(power, times))
+    drive_work_positive = float(np.trapz(np.maximum(power, 0.0), times))
+    drive_work_absolute = float(np.trapz(np.abs(power), times))
     return [
         {
             "architecture": "direct_structured_subsystem",
-            "external_drive_work_proxy": 0.0,
+            "drive_work_net": 0.0,
+            "drive_work_positive": 0.0,
+            "drive_work_absolute": 0.0,
             "heom_trace_distance_depth4": heom_direct["final_trace_distance"],
             "mps_trace_distance_chain6": mps_direct["final_trace_distance"],
-            "work_per_heom_trace_distance": 0.0,
+            "absolute_work_per_heom_trace_distance": 0.0,
             "practical_energy_note": "No active drive, lowest external energy, but weaker output distinguishability.",
         },
         {
             "architecture": "floquet_buffered_subsystem",
-            "external_drive_work_proxy": drive_work,
+            "drive_work_net": drive_work_net,
+            "drive_work_positive": drive_work_positive,
+            "drive_work_absolute": drive_work_absolute,
             "heom_trace_distance_depth4": heom_buffer["final_trace_distance"],
             "mps_trace_distance_chain6": mps_buffer["final_trace_distance"],
-            "work_per_heom_trace_distance": drive_work / heom_buffer["final_trace_distance"],
+            "absolute_work_per_heom_trace_distance": (
+                drive_work_absolute / heom_buffer["final_trace_distance"]
+            ),
             "practical_energy_note": "Consumes clock/drive work, but gives stronger isolation and distinguishability.",
         },
     ]
@@ -282,9 +295,11 @@ def _write_report(path, heom_rows, mps_rows, energy_rows):
         handle.write("\nEnergy/work comparison:\n")
         for row in energy_rows:
             handle.write(
-                f"- {row['architecture']}: Wdrive={row['external_drive_work_proxy']:.6f}, "
+                f"- {row['architecture']}: Wnet={row['drive_work_net']:.6f}, "
+                f"Win+={row['drive_work_positive']:.6f}, "
+                f"Wabs={row['drive_work_absolute']:.6f}, "
                 f"D_HEOM={row['heom_trace_distance_depth4']:.6f}, "
-                f"W/D={row['work_per_heom_trace_distance']:.6f}. "
+                f"Wabs/D={row['absolute_work_per_heom_trace_distance']:.6f}. "
                 f"{row['practical_energy_note']}\n"
             )
     return path
@@ -295,7 +310,7 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     heom_rows = run_heom_depth_scaling(params)
     mps_rows = run_mps_dimension_scaling(params)
-    energy_rows = energy_comparison(heom_rows, mps_rows)
+    energy_rows = energy_comparison(params, heom_rows, mps_rows)
 
     heom_path = _write_csv(
         OUTPUT_DIR / "heom_depth_scaling.csv",
@@ -320,10 +335,12 @@ def main():
         energy_rows,
         [
             "architecture",
-            "external_drive_work_proxy",
+            "drive_work_net",
+            "drive_work_positive",
+            "drive_work_absolute",
             "heom_trace_distance_depth4",
             "mps_trace_distance_chain6",
-            "work_per_heom_trace_distance",
+            "absolute_work_per_heom_trace_distance",
             "practical_energy_note",
         ],
     )
@@ -339,9 +356,9 @@ def main():
     for row in energy_rows:
         print(
             row["architecture"],
-            f"W={row['external_drive_work_proxy']:.6f}",
+            f"Wabs={row['drive_work_absolute']:.6f}",
             f"D_HEOM={row['heom_trace_distance_depth4']:.6f}",
-            f"W/D={row['work_per_heom_trace_distance']:.6f}",
+            f"Wabs/D={row['absolute_work_per_heom_trace_distance']:.6f}",
         )
 
 

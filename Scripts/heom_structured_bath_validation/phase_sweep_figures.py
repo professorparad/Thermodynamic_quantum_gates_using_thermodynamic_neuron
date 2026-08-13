@@ -40,9 +40,9 @@ def make_operating_region_figures(rows, output_path):
 
     def best_finite_efficiency(selected):
         values = [
-            min(row["gain_per_drive_work"], 10.0)
+            min(row["gain_per_absolute_work"], 10.0)
             for row in selected
-            if np.isfinite(row["gain_per_drive_work"])
+            if np.isfinite(row["gain_per_absolute_work"])
         ]
         return max(values) if values else 0.0
 
@@ -73,7 +73,7 @@ def make_operating_region_figures(rows, output_path):
     panels = [
         (best_gain, "Best HEOM gain", "buffered - direct D"),
         (robust_fraction, "Robust-pass fraction", "fraction"),
-        (best_efficiency, "Best gain/work (clipped)", "gain / |W|"),
+        (best_efficiency, "Best gain/work throughput (clipped)", "gain / Wabs"),
     ]
     for ax, (values, title, cbar_label) in zip(axes, panels):
         im = ax.imshow(values, origin="lower", aspect="auto", cmap="viridis")
@@ -92,7 +92,7 @@ def make_operating_region_figures(rows, output_path):
 def make_energy_frontier(rows, output_path):
     import matplotlib.pyplot as plt
 
-    works = np.array([row["drive_work_proxy_abs"] for row in rows], dtype=float)
+    works = np.array([row["drive_work_absolute"] for row in rows], dtype=float)
     gains = np.array([row["trace_distance_gain"] for row in rows], dtype=float)
     buffered = np.array([row["buffered_trace_distance"] for row in rows], dtype=float)
     labels = np.array([row["label"] for row in rows])
@@ -102,7 +102,8 @@ def make_energy_frontier(rows, output_path):
         "buffer_hurts": "#8c8c8c",
         "costly_gain": "#f58518",
         "efficient_gain": "#54a24b",
-        "free_gain": "#4c78a8",
+        "passive_buffer_gain": "#4c78a8",
+        "zero_resolved_work": "#b279a2",
     }
     for label in sorted(set(labels)):
         mask = labels == label
@@ -115,7 +116,7 @@ def make_energy_frontier(rows, output_path):
             label=label,
         )
     ax.axhline(0.0, color="black", linewidth=0.8)
-    ax.set_xlabel("|drive-work proxy|")
+    ax.set_xlabel("absolute drive-work throughput")
     ax.set_ylabel("HEOM distinguishability gain")
     ax.set_title("Energy-fidelity frontier")
     ax.legend(fontsize=8)

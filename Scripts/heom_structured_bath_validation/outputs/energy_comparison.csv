@@ -1,3 +1,3 @@
-architecture,external_drive_work_proxy,heom_trace_distance_depth4,mps_trace_distance_chain6,work_per_heom_trace_distance,practical_energy_note
-direct_structured_subsystem,0.0,0.5223483886434798,0.7480641363821199,0.0,"No active drive, lowest external energy, but weaker output distinguishability."
-floquet_buffered_subsystem,0.3581817510420671,0.8559445619262485,0.7911141710769636,0.41846372647780133,"Consumes clock/drive work, but gives stronger isolation and distinguishability."
+architecture,drive_work_net,drive_work_positive,drive_work_absolute,heom_trace_distance_depth4,mps_trace_distance_chain6,absolute_work_per_heom_trace_distance,practical_energy_note
+direct_structured_subsystem,0.0,0.0,0.0,0.5223483886434798,0.7480641363821199,0.0,"No active drive, lowest external energy, but weaker output distinguishability."
+floquet_buffered_subsystem,-0.4061072670145277,0.03864776146006247,0.4834027899346528,0.8559445619262485,0.7911141710769636,0.5647594615786632,"Consumes clock/drive work, but gives stronger isolation and distinguishability."

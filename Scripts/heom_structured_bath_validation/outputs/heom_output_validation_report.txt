@@ -1,0 +1,9 @@
+HEOM generated-output acceptance checks
+=======================================
+
+PASS: phase sweep: 324 points, 284 positive, 229 robust
+PASS: channel: CPTP audit passed and calibrated buffered fidelity > 0.99
+PASS: uncertainty: 48/48 robust, minimum gain 0.557290
+PASS: convergence: complete 2x3x3 depth/Matsubara matrix
+PASS: energy: net/supplied/absolute work inequalities passed
+PASS: figures: 6 publication plots present and nonempty
