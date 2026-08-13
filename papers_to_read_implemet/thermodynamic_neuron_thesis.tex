@@ -1161,6 +1161,34 @@ kernel explicitly. For the full six-qubit-plus-buffer gate it may become
 large, so it should first validate the reference/output branches and then
 selected full-gate points from the GKSL phase map.
 
+\paragraph{Computed HEOM output-buffer benchmark.}
+The first HEOM benchmark was run for a structured Drude--Lorentz output
+environment with hierarchy depth $N_{\mathrm{tier}}=4$, convergence
+checked against depth $5$, two Matsubara terms, and a driven qubit buffer.
+The direct structured-bath branch gives final logical trace distance
+$D_{\mathrm{direct}}=0.417302$, while the Floquet-buffered branch gives
+$D_{\mathrm{buffer}}=0.799184$. Thus the HEOM trace-distance gain at this
+working point is
+\begin{equation}
+\Delta D_{\mathrm{HEOM}}
+=D_{\mathrm{buffer}}-D_{\mathrm{direct}}
+=0.381882 .
+\end{equation}
+The maximum depth-refinement trace-distance drift is
+$5.111\times10^{-7}$ for the direct branch and $1.198\times10^{-6}$ for
+the buffered branch, so the result is converged at the plotted
+precision. The result should be read as an output-stage HEOM validation,
+not yet as the full six-qubit gate HEOM calculation.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.82\linewidth]{heom_validation.png}
+\caption{HEOM structured-bath validation of the output stage. The
+Floquet-buffered branch preserves a larger final distinguishability
+between the two logical initial states than the direct structured-bath
+contact at the same bath parameters.}
+\label{fig:heom-validation}
+\end{figure}
+
 \subsection{Level 3: chain mapping with MPS or TTN}
 For the full structured-bath gate, the scalable route is to map each
 reservoir to a one-dimensional chain,

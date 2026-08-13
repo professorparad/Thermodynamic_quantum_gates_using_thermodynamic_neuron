@@ -1,0 +1,19 @@
+HEOM structured-bath validation report
+======================================
+
+Parameters: HEOMValidationParameters(epsilon_s=1.0, epsilon_f=1.0, system_buffer_coupling=0.08, drive_amplitude=0.35, drive_frequency=1.2, bath_temperature=0.75, reorganization_energy=0.045, bath_cutoff=1.8, matsubara_terms=2, direct_depth=4, buffered_depth=4, convergence_depth=5, t_end=8.0, num_steps=160)
+
+heom_direct:
+- final trace distance: 0.417302
+- population contrast: 0.417302
+- depth convergence trace distance: 5.111116e-07
+- drive-work proxy: 0.000000
+
+heom_floquet_buffer:
+- final trace distance: 0.799184
+- population contrast: 0.749817
+- depth convergence trace distance: 1.197511e-06
+- drive-work proxy: -0.358182
+
+Buffered minus direct trace-distance gain: 0.381882
+Conclusion: buffered HEOM branch improves distinguishability.
