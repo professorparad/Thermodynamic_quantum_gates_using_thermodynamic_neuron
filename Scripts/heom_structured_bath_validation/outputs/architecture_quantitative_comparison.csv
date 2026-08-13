@@ -1,0 +1,5 @@
+architecture,trace_distance,absolute_drive_work,autonomous,external_clock,physical_role
+direct_autonomous_contact,0.353784390377411,0.0,yes,no,logical node directly loaded by structured bath
+integrated_passive_buffer,0.9665632897572334,0.0,yes,no,static reaction coordinate / impedance filter
+floquet_buffer_best_efficiency,0.9687176974066047,0.09082481961327753,no,yes,actively tunable spectral filter
+floquet_buffer_best_gain,0.977156323971897,0.5594201986557357,no,yes,maximum-distinguishability driven filter

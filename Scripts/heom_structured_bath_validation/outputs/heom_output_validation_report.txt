@@ -6,4 +6,7 @@ PASS: channel: CPTP audit passed and calibrated buffered fidelity > 0.99
 PASS: uncertainty: 48/48 robust, minimum gain 0.557290
 PASS: convergence: complete 2x3x3 depth/Matsubara matrix
 PASS: energy: net/supplied/absolute work inequalities passed
-PASS: figures: 6 publication plots present and nonempty
+PASS: architectures: passive isolation dominates direct contact; drive adds gain and work
+PASS: matched architecture sweep: 243/243 driven points improve over passive
+PASS: inverter transfer: CMOS and thermal models have positive noise margins and gain > 1
+PASS: figures: 9 publication plots present and nonempty

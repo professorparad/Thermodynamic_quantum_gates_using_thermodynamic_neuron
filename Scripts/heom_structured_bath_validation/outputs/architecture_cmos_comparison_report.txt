@@ -1,0 +1,22 @@
+Architecture and CMOS-inverter comparison
+==========================================
+
+Same-point HEOM architecture comparison:
+- direct autonomous contact: D=0.353784, Wabs=0
+- integrated passive buffer: D=0.966563, Wabs=0
+- Floquet best-gain buffer: D=0.977156, Wabs=0.559420
+- drive-specific increment at best-gain point: 0.010593
+
+Matched Floquet versus passive-buffer sweep:
+- driven points: 243
+- positive incremental points: 243/243
+- median increment: 0.020150
+- 5--95% interval: [0.002450, 0.164534]
+- maximum increment: 0.263747
+
+Normalized inverter transfer metrics:
+- CMOS: gain_max=115.000000, VIL/xL=0.424000, VIH/xH=0.576000, NML=0.356000, NMH=0.356000
+- thermodynamic NOT: gain_max=4.994758, VIL/xL=0.367168, VIH/xH=0.647870, NML=0.310423, NMH=0.294943
+
+Decision:
+The integrated passive buffer is the strongest architecture supported by the current fixed-parameter output-stage data: it retains autonomy and captures most of the distinguishability gain. Floquet driving is justified when in-operation spectral tunability, calibration, or rescue of poorly matched static parameters is worth its clock, work, and control overhead. A CMOS analogy is useful for transfer gain, noise margin, and load isolation, but a genuine complementary thermal inverter requires separate input-controlled heating and cooling channels; the present single buffer is closer to an active spectral filter than to a complete CMOS inverter.

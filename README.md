@@ -15,6 +15,8 @@ Current phase status:
 - **Floquet bridge started:** driven buffer prototype in `Scripts/floquet_buffer_extension/`.
 - **Floquet screening added:** parameter sweep and decision report for deciding when the full gate attempt is justified.
 - **Gate prototype added:** NOT-gate screening layer in `Scripts/thermodynamic_floquet_gate_prototype/`.
+- **HEOM output stage validated:** converged structured-bath dynamics, Floquet phase sweeps, process tomography, information backflow, disorder sampling, and work accounting in `Scripts/heom_structured_bath_validation/`.
+- **Architecture comparison added:** direct, passive-buffer, and driven-buffer HEOM results are separated quantitatively and compared with an idealized CMOS inverter transfer model.
 - **Fallbacks planned:** single-qubit thermodynamic protocol, reaction-coordinate benchmark, or tensor-network geometry study.
 
 Clean terminal commands:
@@ -36,9 +38,17 @@ scripts/run_thermodynamic_floquet_gate_prototype.sh
 scripts/run_full_floquet_not_gate.sh
 scripts/run_phase_v_structured_backend.sh
 scripts/run_phase_v_structured_backend_research.sh
+scripts/run_heom_validation.sh
+scripts/run_heom_floquet_phase_sweep.sh
+scripts/run_heom_mps_scaling.sh
+scripts/run_advanced_heom_experiments.sh
+scripts/run_architecture_cmos_comparison.sh
+scripts/run_heom_output_checks.sh
 ```
 
 Use `run_non_markovian_smoke.sh` for quick checks. Use `run_non_markovian_research.sh` only when you are ready for a heavier OQuPy run.
+The HEOM comparison commands reuse committed sweep data where appropriate;
+`run_heom_output_checks.sh` is the fast generated-result acceptance test.
 
 ## 📂 Code Files Overview
 

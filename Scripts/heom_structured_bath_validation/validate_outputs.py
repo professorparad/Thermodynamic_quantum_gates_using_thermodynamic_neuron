@@ -76,6 +76,44 @@ def main():
     _check_work_bounds(energy, "drive_work_net", "drive_work_positive", "drive_work_absolute")
     checks.append("energy: net/supplied/absolute work inequalities passed")
 
+    architectures = _read_csv("architecture_quantitative_comparison.csv")
+    assert len(architectures) == 4
+    by_name = {row["architecture"]: row for row in architectures}
+    direct_architecture = by_name["direct_autonomous_contact"]
+    passive_architecture = by_name["integrated_passive_buffer"]
+    floquet_architecture = by_name["floquet_buffer_best_gain"]
+    assert direct_architecture["autonomous"] == "yes"
+    assert passive_architecture["autonomous"] == "yes"
+    assert floquet_architecture["autonomous"] == "no"
+    assert _number(passive_architecture, "trace_distance") > _number(
+        direct_architecture, "trace_distance"
+    )
+    assert _number(floquet_architecture, "trace_distance") > _number(
+        passive_architecture, "trace_distance"
+    )
+    assert _number(passive_architecture, "absolute_drive_work") == 0.0
+    assert _number(floquet_architecture, "absolute_drive_work") > 0.0
+    checks.append("architectures: passive isolation dominates direct contact; drive adds gain and work")
+
+    increments = _read_csv("floquet_increment_over_passive.csv")
+    assert len(increments) == 243
+    assert all(_number(row, "floquet_increment_over_passive") > 0.0 for row in increments)
+    checks.append("matched architecture sweep: 243/243 driven points improve over passive")
+
+    inverter_metrics = _read_csv("cmos_thermal_transfer_metrics.csv")
+    assert {row["architecture"] for row in inverter_metrics} == {
+        "CMOS",
+        "thermodynamic_NOT",
+    }
+    for row in inverter_metrics:
+        assert 0.0 < _number(row, "input_low_threshold") < _number(
+            row, "input_high_threshold"
+        ) < 1.0
+        assert _number(row, "low_noise_margin") > 0.0
+        assert _number(row, "high_noise_margin") > 0.0
+        assert _number(row, "maximum_small_signal_gain") > 1.0
+    checks.append("inverter transfer: CMOS and thermal models have positive noise margins and gain > 1")
+
     figures = [
         "heom_channel_tomography.png",
         "heom_information_backflow.png",
@@ -83,6 +121,9 @@ def main():
         "heom_uncertainty_robustness.png",
         "heom_convergence_matrix.png",
         "heom_energy_fidelity_frontier.png",
+        "thermal_architecture_schematic.png",
+        "architecture_performance_tradeoff.png",
+        "cmos_floquet_inverter_comparison.png",
     ]
     for figure in figures:
         path = OUTPUT_DIR / figure

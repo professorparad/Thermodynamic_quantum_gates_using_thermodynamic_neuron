@@ -1578,18 +1578,263 @@ buffered margin or distinguishability is positive after convergence; and
 (iii) the sign of the buffer advantage does not flip when moving from
 GKSL to HEOM and then to the MPS/TTN structured-bath simulation.
 
-\subsection{CMOS--inverter correspondence}
-The buffered output stage plays the functional role of a regulated CMOS
-inverter: an active stage regenerates the logical node so the load does
-not directly set the logic level, and the figure of merit is the noise
-margin $m=\min_x|\beta_{\mathrm{eff}}(x)-\beta_{\mathrm{th}}|$ relative to
-the switching threshold. The direct branch $C_z\leftrightarrow B_z$ is a
-node loaded directly by the environment; the buffered branch
-$C_z\leftrightarrow F_z(t)\leftrightarrow B_z$ inserts a driven stage that
-reshapes the reservoir spectrum through the sidebands \eqref{eq:Jeff}. The
-analogy is functional, not a claim of electrical equivalence; the detailed
-CMOS dictionary (gain, noise margins, clocked operation) is developed in
-Part~\ref{part:abhishek}.
+\section{Architecture decision and CMOS--inverter correspondence}
+\label{sec:architecture-decision}
+
+\subsection{Three realizable bath-contact architectures}
+The numerical word ``buffered'' contains two different physical ideas:
+inserting an intermediate subsystem and driving that subsystem.  They
+must be separated before asking whether the Floquet architecture is
+actually better.  For one output operator $S$ and bath operator $B$, the
+three Hamiltonian topologies are
+\begin{align}
+ H_{\rm direct}
+ &=H_{\rm M}+H_B+g_{MB}S\otimes B,
+ \label{eq:architecture-direct}\\
+ H_{\rm passive}
+ &=H_{\rm M}+H_F+g_{MF}S\otimes F+H_B+g_{FB}F\otimes B,
+ \label{eq:architecture-passive}\\
+ H_{\rm Floquet}(t)
+ &=H_{\rm passive}+A\cos(\Omega t+\phi)F_x .
+ \label{eq:architecture-floquet}
+\end{align}
+Here M denotes the integrated autonomous thermal machine.  The direct and
+passive Hamiltonians are time independent and therefore strictly
+autonomous once the thermal reservoirs are connected.  The passive
+subsystem $F$ may be a reaction-coordinate resonator, auxiliary qubit, or
+impedance filter.  The Floquet device is a hybrid thermal machine: its
+heat currents still perform the logic, but an external phase reference
+and work source continuously modulate $F$.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.99\linewidth]{thermal_architecture_schematic.png}
+\caption{Four architecture classes.  Direct contact minimizes hardware;
+the static integrated buffer preserves autonomy while filtering the bath;
+the Floquet hybrid adds in-operation spectral control; and a genuinely
+CMOS-like thermal inverter requires complementary pull-high and pull-low
+dissipative channels rather than one buffer alone.}
+\label{fig:thermal-architecture-schematic}
+\end{figure}
+
+For matched bath and coupling parameters, define the exact decomposition
+\begin{equation}
+ \underbrace{D_F(A)-D_{\rm direct}}_{\text{total buffered gain}}
+ =\underbrace{D_F(0)-D_{\rm direct}}_{\text{passive isolation}}
+ +\underbrace{D_F(A)-D_F(0)}_{\text{drive-specific Floquet gain}}.
+ \label{eq:buffer-gain-decomposition}
+\end{equation}
+At the best-gain HEOM bath point
+$(g_{SF},\lambda,\gamma_c)=(0.04,0.075,0.8)$, direct contact gives
+$D_{\rm direct}=0.353784$, the static integrated buffer gives
+$D_F(0)=0.966563$, and the best driven setting gives
+$D_F(0.55)=0.977156$.  Therefore
+\begin{equation}
+ \Delta D_{\rm total}=0.623372
+ =0.612779+0.010593 .
+ \label{eq:best-gain-decomposition}
+\end{equation}
+Approximately $98.3\%$ of the total improvement at this point comes from
+inserting the intermediate subsystem; only $1.7\%$ is the incremental
+effect of driving it.  The driven increment costs
+$W_{\rm abs}=0.559420$ in the dimensionless work-throughput convention of
+Eq.~\eqref{eq:work-accounting}.
+
+This single point does not make the drive irrelevant.  Repeating the
+matched comparison for all $243$ driven HEOM points gives
+\begin{equation}
+ D_F(A)-D_F(0)>0\quad\text{for }243/243\text{ points},
+ \label{eq:all-driven-improve}
+\end{equation}
+with median increment $0.020150$, empirical $5$--$95\%$ interval
+$[0.002450,0.164534]$, and maximum increment $0.263747$.  Larger drive
+amplitudes have larger median increments, and the largest gains occur
+when the static buffer is less well matched.  Thus periodic control is
+most defensible as a \emph{tunable rescue and calibration layer}, not as
+the sole origin of isolation.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.96\linewidth]{architecture_performance_tradeoff.png}
+\caption{Architecture-level HEOM comparison.  Top: distinguishability and
+external drive throughput for direct, passive, and two driven operating
+points.  Bottom left: adding drive at one fixed bath/coupling point gives
+a small increase in $D$ while work grows.  Bottom right: distribution of
+the drive-specific increment over all $243$ matched driven/passive pairs.}
+\label{fig:architecture-performance}
+\end{figure}
+
+The earlier reduced bridge ablation found that its default undriven
+spacer degraded distinguishability, whereas the broader HEOM sweep finds
+strong passive-buffer performance at weak $g_{SF}$.  These results are not
+mathematically contradictory: the Hamiltonians, bath descriptions, and
+parameter points differ.  Their combination establishes the more useful
+claim that a static buffer is \emph{not automatically} beneficial; it must
+be impedance- and frequency-matched, while Floquet control expands the
+set of parameters that can be repaired after fabrication.
+
+\subsection{Is the Floquet architecture actually better?}
+There is no architecture-independent yes/no answer because ``better''
+requires an objective function.  A minimal decision functional is
+\begin{equation}
+ \mathcal C_a
+ =w_D(1-D_a)+w_W W_{{\rm abs},a}
+ +w_C C_{{\rm control},a}+w_H C_{{\rm hardware},a},
+ \label{eq:architecture-cost}
+\end{equation}
+where the weights encode whether a device values logical fidelity,
+external work, control electronics, or component count.  The computed
+results support the following conditional decision.
+
+\begin{table}[H]\centering\small
+\caption{Architecture decision from the present simulations.  Numerical
+$D$ values refer to the same selected reduced output-stage HEOM point and
+are not a full-device energy comparison.}
+\label{tab:architecture-decision}
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+Criterion & Direct autonomous contact & Integrated passive buffer & Floquet buffer \\
+\midrule
+Final $D$ at selected bath & $0.353784$ & $0.966563$ & $0.977156$ \\
+External drive throughput & $0$ & $0$ & $0.559420$ at maximum-$D$ point \\
+Strict autonomy & Yes & Yes & No: clock and work source required \\
+Spectral isolation & None beyond bare coupling & Fixed by $H_F,g_{MF},g_{FB}$ & Sideband-tunable during operation \\
+Fabrication/calibration & Lowest component count & Extra resonator/qubit and fixed matching & Extra subsystem, drive line, phase and Lamb-shift calibration \\
+Best use case & Benign Markovian bath; minimum hardware & Stable structured bath known at design time & Unknown/drifting spectrum or post-fabrication retuning \\
+Current evidence & Lowest work but weak $D$ in hard-memory point & Captures most of the HEOM gain & Improves every matched passive point, often modestly \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Hence the \emph{integrated passive buffer is the preferred default
+architecture under the present fixed-parameter evidence}: it preserves
+autonomy and obtains nearly all of the best-point distinguishability.
+The Floquet buffer is better when its reconfigurability has operational
+value---for example compensating fabrication disorder, tracking a moving
+bath resonance, widening a robust operating window, or shortening a
+calibration cycle.  Direct contact remains rational when the reservoir is
+already weak and Markovian, component count dominates, or any external
+clock is disallowed.  The Floquet branch therefore does not dominate the
+autonomous alternatives in the Pareto sense: it increases $D$ but also
+increases work and control complexity.
+
+This conclusion is intentionally limited to the reduced HEOM output
+stage.  A final device-level ranking needs the full gate truth table,
+steady heat currents, entropy production, reset cost, drive-line loss,
+and fabrication overhead evaluated in one common model.  In particular,
+$W_{\rm abs}$ is not the wall-plug power of a cryogenic microwave source.
+
+\subsection{Deriving the CMOS comparison}
+The analogy to a CMOS inverter is useful only after specifying the
+transfer law.  In a symmetric long-channel square-law model, define
+\begin{equation}
+ I(\Delta,V_D)=k
+ \begin{cases}
+ 0,&\Delta\le0,\\
+ \Delta V_D-\tfrac12V_D^2,&0<V_D<\Delta,\\
+ \tfrac12\Delta^2,&V_D\ge\Delta,
+ \end{cases}
+ \label{eq:mos-square-law}
+\end{equation}
+with a small channel-length-modulation correction
+$I\mapsto I(1+\lambda_{\rm ch}V_D)$.  For the nMOS and pMOS branches,
+\begin{equation}
+ I_n=I(V_{\rm in}-V_T,V_{\rm out}),\qquad
+ I_p=I(V_{DD}-V_{\rm in}-V_T,V_{DD}-V_{\rm out}),
+ \label{eq:cmos-branch-currents}
+\end{equation}
+and the DC transfer curve is obtained from $I_n=I_p$.  The complementary
+devices actively connect the output toward one of two stiff voltage rails;
+near threshold both conduct, producing large negative gain
+$-d V_{\rm out}/d V_{\rm in}$.
+
+A complementary thermal inverter requires the analogous competition of
+two input-controlled dissipative rates, not merely a subsystem placed
+between output and bath.  If $p$ is the excited-state population,
+\begin{equation}
+ \dot p
+ =\Gamma_\uparrow(\beta_{\rm in})(1-p)
+ -\Gamma_\downarrow(\beta_{\rm in})p,
+ \qquad
+ p_\infty
+ =\frac{\Gamma_\uparrow}
+ {\Gamma_\uparrow+\Gamma_\downarrow},
+ \label{eq:complementary-thermal-rates}
+\end{equation}
+and
+\begin{equation}
+ \beta_{\rm out}
+ =\frac{1}{\epsilon_z}\ln\!\left(\frac{1-p_\infty}{p_\infty}\right).
+ \label{eq:thermal-inverter-output}
+\end{equation}
+The cooling channel connected to the cold, high-$\beta$ rail is the
+logical pull-high branch; the heating channel connected to the hot,
+low-$\beta$ rail is the pull-low branch.  The input must tune these rates
+in opposite directions.  Floquet sidebands can tune
+$\Gamma_{\uparrow,\downarrow}$, but the periodic drive alone does not
+create complementary restoration unless both channels are engineered.
+
+For normalized input and output
+\begin{equation}
+ x=\frac{\beta_{\rm in}-\beta_{\rm hot}}
+ {\beta_{\rm cold}-\beta_{\rm hot}},\qquad
+ y=\frac{\beta_{\rm out}-\beta_{\rm hot}}
+ {\beta_{\rm cold}-\beta_{\rm hot}},
+ \label{eq:normalized-thermal-vtc}
+\end{equation}
+the small-signal restoration gain is
+$G=|\mathrm{d}y/\mathrm{d}x|$.  Define $x_{IL}$
+and $x_{IH}$ by the two crossings $G=1$, and let
+$y_H=y(x_{IL})$, $y_L=y(x_{IH})$.  The normalized static noise margins
+are
+\begin{equation}
+ NM_L=x_{IL}-y_L,\qquad NM_H=y_H-x_{IH}.
+ \label{eq:normalized-noise-margins}
+\end{equation}
+The idealized CMOS calculation gives
+$(NM_L,NM_H)=(0.356,0.356)$; the reconstructed thermodynamic NOT at
+$\epsilon_1=20$ gives $(0.310,0.295)$ and maximum normalized slope
+$G_{\max}=4.995$.  The CMOS peak slope ($\sim115$ in the discretized
+ideal square-law model) is model-sensitive and is shown only to indicate
+a much sharper switching region, not as a measured technology comparison.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{cmos_floquet_inverter_comparison.png}
+\caption{CMOS and thermodynamic-inverter comparison generated from code.
+Top: complementary electrical pull-up/pull-down and the corresponding
+cold-rail cooling / hot-rail heating architecture.  Bottom: normalized
+transfer curves and small-signal gain.  The thermodynamic NOT has a
+regenerative $G>1$ region, but the present Floquet buffer is a tunable
+spectral stage rather than a complete complementary inverter.}
+\label{fig:cmos-floquet-comparison}
+\end{figure}
+
+\begin{table}[H]\centering\small
+\caption{CMOS dictionary and the limits of the analogy.}
+\label{tab:cmos-thermal-dictionary}
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+CMOS quantity & Thermodynamic counterpart & Important limitation \\
+\midrule
+$V_{\rm in}$ & Input bath inverse temperature or virtual temperature & Temperature is not an instantaneous node voltage. \\
+$V_{\rm out}$ & Output $\beta_{\rm out}$, polarization, or decoded population & Usually inferred statistically from repeated measurements. \\
+$V_{DD}$/ground & Cold high-$\beta$ / hot low-$\beta$ logical rails & Rails are reservoirs with heat and entropy currents. \\
+pMOS/nMOS & Cooling pull-high / heating pull-low dissipative channels & Hamiltonian couplings are generally bidirectional, not ideal unilateral switches. \\
+Voltage gain & $|\mathrm{d}\beta_{\rm out}/\mathrm{d}\beta_{\rm in}|$ or normalized $G$ & Trace-distance preservation is a separate quantum-channel metric. \\
+Noise margin & Distance from the thermal decoding threshold & Depends on bath fluctuations, finite heat capacity, and readout statistics. \\
+Fan-out & One decoded thermal output biasing later gates & Arbitrary quantum states cannot be copied; practical cascading is classical or dissipative. \\
+Supply power & Steady heat currents plus any Floquet work & Must include entropy production, reset, and control-line losses. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The correct engineering statement is therefore narrower than
+``Floquet buffer equals CMOS inverter.''  Both can isolate a logical node,
+shape a sigmoidal inversion curve, and improve noise margin through a
+regenerative region.  CMOS already integrates complementary restoration,
+directional gain, stiff rails, and mature fan-out.  The current Floquet
+buffer supplies spectral isolation and tunability; it becomes genuinely
+CMOS-like only when embedded in a two-channel thermal architecture whose
+opposing rates restore both logical rails and whose output remains stable
+under a specified downstream load.
 
 \section{Robustness programme and outlook}
 \label{sec:robustness}
@@ -1611,8 +1856,11 @@ $m_0=0.05$) gave $68$ robust passes, $0$ fragile, $12$ fail
 (Figs.~\ref{fig:robmap}--\ref{fig:rob3d}); however the best
 buffered--minus--direct margin gain was only $4.02\times10^{-5}$, so in
 this surrogate the buffer preserves the truth table without yet enlarging
-the margin. The stronger claim must be retested with the PT--MPO/TEMPO or
-HEOM backend.
+the margin.  The reduced output-stage HEOM sweep now establishes a
+positive drive-specific distinguishability increment at all $243$ matched
+points, but it does not propagate the full three-qubit Boolean gate.
+Therefore enlargement of the \emph{full-gate} robust region still requires
+the PT--MPO/TEMPO or a full-machine HEOM backend.
 
 \begin{figure}[H]\centering
 \includegraphics[width=0.92\linewidth]{robustness_phase_maps.png}
@@ -1635,27 +1883,32 @@ the buffered decoding margin.}
 \label{fig:rob3d}
 \end{figure}
 
-\paragraph{Validation required for a journal--grade claim.} Before
-asserting that the buffer enlarges the robust region under genuine memory,
-the programme must add: (i) a weak--coupling cross--check that PT--MPO
-reproduces the GKSL limit; (ii) a PT--MPO convergence surface
+\paragraph{Validation required for a journal--grade claim.} The present
+output-stage HEOM work supplies hierarchy convergence, an independent
+structured-bath benchmark, disorder sampling, energy bookkeeping, and a
+trace-distance-backflow diagnostic.  Before asserting that the buffer
+enlarges the \emph{full-gate} robust region under genuine memory, the
+programme must still add: (i) a weak--coupling cross--check that PT--MPO
+reproduces the GKSL limit; (ii) a full-gate PT--MPO convergence surface
 $(\Delta t,\tau_{\mathrm{mem}},\epsilon_{\mathrm{SVD}})\mapsto
 (\calA_{\mathrm{NOT}},m,\max_t\delta_{\mathrm{tr}},\max_t\delta_{\mathrm{herm}})$;
-(iii) tensor--network resource scaling; (iv) an independent HEOM or
-reaction--coordinate benchmark; (v) threshold cross--validation;
-(vi) parameter--disorder robustness; (vii) a strong--coupling
-thermodynamic audit of drive/interaction/bath energy; and (viii) a
-non--Markovianity diagnostic (trace--distance backflow). A robust claim
-requires the same truth table and the same sign of the buffer advantage to
-survive refinement of these controls.
+(iii) converged MPS/TTN propagation of the complete gate and reservoirs;
+(iv) threshold cross--validation on held-out bath parameters; and (v) a
+full-device strong-coupling audit including heat, interaction energy,
+reset, and drive-line losses. A robust claim requires the same truth table
+and the same sign of the buffer advantage to survive refinement of these
+controls.
 
 \paragraph{Outlook.} The staged evidence is: an analytic baseline that
 reconstructs the NOT mechanism; a three--qubit GKSL surrogate that passes
 the direct and buffered truth tables; and a corrected PT--MPO/TEMPO
 structured--bath backend that also passes a calibrated truth table but with
-a small buffered margin. The project has thus entered the
-robustness--mapping stage. Heat/work claims remain provisional pending an
-explicit strong--coupling audit. The rigorous driven--dissipative
+a small buffered margin; and a converged reduced HEOM output model whose
+buffer and drive contributions are now separated quantitatively. The
+project has thus entered the full-gate robustness--mapping stage.
+Output-stage drive work has been audited in the stated convention, while
+full-device heat, entropy, reset, and wall-plug claims remain provisional.
+The rigorous driven--dissipative
 foundation for that programme --- the periodic GKSL generator, the
 chain/MPS treatment, and the work--distinguishability conjecture --- is the
 subject of Part~\ref{part:abhishek}.
