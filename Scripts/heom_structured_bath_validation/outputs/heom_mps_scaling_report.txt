@@ -1,0 +1,28 @@
+HEOM and MPS scaling report
+===========================
+
+HEOM depth scaling:
+- heom_direct depth=2: D=0.522673, drift=1.688e-04, runtime=0.094s
+- heom_floquet_buffer depth=2: D=0.855961, drift=2.717e-05, runtime=0.116s
+- heom_direct depth=3: D=0.522343, drift=3.536e-06, runtime=0.111s
+- heom_floquet_buffer depth=3: D=0.855945, drift=2.980e-07, runtime=0.133s
+- heom_direct depth=4: D=0.522348, drift=5.623e-08, runtime=0.103s
+- heom_floquet_buffer depth=4: D=0.855945, drift=4.456e-07, runtime=0.159s
+- heom_direct depth=5: D=0.522348, drift=0.000e+00, runtime=0.154s
+- heom_floquet_buffer depth=5: D=0.855944, drift=0.000e+00, runtime=0.226s
+
+MPS dimension scaling:
+- mps_direct_subsystem L=2: chi=2, Smax=0.8066 bits, D=0.748069
+- mps_floquet_buffer L=2: chi=4, Smax=0.7351 bits, D=0.791122
+- mps_direct_subsystem L=3: chi=4, Smax=0.8066 bits, D=0.748069
+- mps_floquet_buffer L=3: chi=4, Smax=0.7351 bits, D=0.791121
+- mps_direct_subsystem L=4: chi=4, Smax=0.8066 bits, D=0.748068
+- mps_floquet_buffer L=4: chi=6, Smax=0.7351 bits, D=0.791118
+- mps_direct_subsystem L=5: chi=6, Smax=0.8066 bits, D=0.748065
+- mps_floquet_buffer L=5: chi=6, Smax=0.7351 bits, D=0.791117
+- mps_direct_subsystem L=6: chi=6, Smax=0.8066 bits, D=0.748064
+- mps_floquet_buffer L=6: chi=6, Smax=0.7351 bits, D=0.791114
+
+Energy/work comparison:
+- direct_structured_subsystem: Wdrive=0.000000, D_HEOM=0.522348, W/D=0.000000. No active drive, lowest external energy, but weaker output distinguishability.
+- floquet_buffered_subsystem: Wdrive=0.358182, D_HEOM=0.855945, W/D=0.418464. Consumes clock/drive work, but gives stronger isolation and distinguishability.

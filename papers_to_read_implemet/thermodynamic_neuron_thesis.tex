@@ -1189,6 +1189,60 @@ contact at the same bath parameters.}
 \label{fig:heom-validation}
 \end{figure}
 
+\paragraph{HEOM depth scaling and MPS dimension scaling.}
+The HEOM hierarchy was also swept over depths $N_{\mathrm{tier}}=2,3,4,5$
+on a shortened scaling run. At depth $4$ the direct structured subsystem
+has $D=0.522348$ with depth--5 drift $5.62\times10^{-8}$, while the
+Floquet-buffered subsystem has $D=0.855945$ with drift
+$4.46\times10^{-7}$. Thus the HEOM result is already stable by depths
+$3$--$4$ for this benchmark.
+
+For the tensor-network estimate, each reservoir was replaced by a finite
+spin chain and the required MPS bond dimension was estimated from the
+Schmidt spectra of the exact evolved state. For bath-chain lengths
+$L=2,\ldots,6$, the direct subsystem required maximum bond dimension
+$\chi=2,4,4,6,6$, while the Floquet-buffered chain required
+$\chi=4,4,6,6,6$. The buffered geometry therefore costs an extra local
+site and a slightly larger small-$L$ bond, but it does not show runaway
+bond growth in this benchmark. At $L=6$ the direct chain gives
+$D=0.748064$ and the buffered chain gives $D=0.791114$.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.86\linewidth]{heom_mps_scaling.png}
+\caption{Scaling validation. Left: HEOM convergence versus hierarchy
+depth, measured by trace-distance drift relative to depth $5$. Right:
+estimated MPS bond dimension versus structured-bath chain length for the
+direct subsystem and the Floquet-buffered subsystem.}
+\label{fig:heom-mps-scaling}
+\end{figure}
+
+\paragraph{Energy/work comparison and practical interpretation.}
+The direct structured-bath subsystem uses no external drive work:
+$W_{\mathrm{drive}}=0$. It is therefore the lower-energy device if one
+counts only externally supplied work. Its drawback is weaker logical
+separation: in the HEOM depth--4 scaling run $D_{\mathrm{direct}}=0.522348$.
+The Floquet-buffered subsystem consumes clock/drive work
+$|W_{\mathrm{drive}}|\simeq0.358182$ and has
+$D_{\mathrm{buffer}}=0.855945$, giving a work-per-distinguishability proxy
+$|W_{\mathrm{drive}}|/D_{\mathrm{buffer}}\simeq0.418464$. Thus the answer
+to ``which uses less energy?'' is: the direct subsystem uses less external
+energy, but the buffered subsystem buys stronger isolation and readout
+distinguishability by spending drive work. The useful engineering
+question is therefore not absolute work alone, but whether the improved
+noise margin is worth the supplied AC power.
+
+Practically, the architecture can be implemented in platforms that allow
+tunable qubit gaps and engineered reservoirs. In superconducting circuits,
+$C_z$ and $F_z$ can be transmon-like qubits or a qubit plus resonator,
+the buffer gap can be modulated by flux or microwave driving, and the
+structured bath can be an impedance-engineered transmission line or a
+lossy resonator chain. In trapped ions or quantum dots, the same logic is
+implemented by a driven auxiliary level coupled to phonon/electronic
+reservoir modes. The experimental signature is simple: prepare the two
+logical input states, run the direct and buffered devices to the same
+readout time, measure the output populations or trace-distance proxy,
+and compare the gain against calibrated drive power.
+
 \subsection{Level 3: chain mapping with MPS or TTN}
 For the full structured-bath gate, the scalable route is to map each
 reservoir to a one-dimensional chain,
