@@ -917,6 +917,67 @@ J_{\mathrm{eff}}(\omega)=\sum_n|c_n(A,\Omega)|^2\,J(\omega+n\Omega),
 \end{equation}
 whose weights $|c_n|^2$ are set by the drive.
 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  qubit/.style={circle, draw, fill=yellow!45, minimum size=8mm,
+                inner sep=1pt, font=\small},
+  bath/.style={ellipse, draw, fill=gray!20, minimum width=17mm,
+               minimum height=8mm, font=\small},
+  hotbath/.style={ellipse, draw, fill=red!20, minimum width=17mm,
+                  minimum height=8mm, font=\small},
+  outbath/.style={ellipse, draw, fill=blue!18, minimum width=17mm,
+                  minimum height=8mm, font=\small},
+  buffer/.style={rectangle, draw, fill=green!18, rounded corners=2pt,
+                 minimum width=16mm, minimum height=8mm, font=\small},
+  therm/.style={decorate, decoration={snake, amplitude=.55mm,
+                segment length=2.1mm, post length=1.0mm}, thick},
+  coh/.style={thick},
+  drive/.style={->, dashed, thick}
+]
+\node[hotbath] (B1) at (0,1.25) {$B_1,\beta_1$};
+\node[bath]    (B0) at (0,-1.25) {$B_0,\beta_0$};
+\node[qubit]   (C1) at (2.3,1.25) {$C_1$};
+\node[qubit]   (C0) at (2.3,-1.25) {$C_0$};
+\node[qubit]   (Cz) at (4.35,0) {$C_z$};
+\node[qubit]   (CM) at (4.95,2.35) {$C_M$};
+\node[bath]    (Br) at (4.95,4.05) {$B_r,\beta_r$};
+\node[buffer]  (Fr) at (2.3,-2.75) {$F_r(t)$};
+\node[bath]    (B0phys) at (0,-2.75) {$B_0^{\rm phys}$};
+\node[buffer]  (Fz) at (6.15,0) {$F_z(t)$};
+\node[outbath] (Bz) at (8.15,0) {$B_z,\mathcal C$};
+\node[font=\scriptsize] (dr1) at (2.3,-3.75) {$A_r\cos\Omega_r t$};
+\node[font=\scriptsize] (dr2) at (6.15,-1.05) {$A_z\cos\Omega_z t$};
+
+\draw[therm] (B1) -- (C1) node[midway,above,font=\scriptsize]{$\gamma_1$};
+\draw[therm] (B0) -- (C0) node[midway,below,font=\scriptsize]{$\gamma_0$};
+\draw[coh] (C0) -- (C1);
+\draw[coh] (C1) -- (Cz);
+\draw[coh] (C0) -- (Cz) node[midway,below=1pt,font=\scriptsize]{$\chi$};
+\draw[therm] (Br) -- (CM) node[midway,right,font=\scriptsize]{$\gamma_r$};
+\draw[therm] (CM) -- (Bz) node[midway,right,font=\scriptsize]{$\mu'$};
+\draw[therm] (B0phys) -- (Fr) node[midway,below,font=\scriptsize]{$\kappa_r$};
+\draw[therm] (Fr) -- (C0) node[midway,right,font=\scriptsize]{$g_r$};
+\draw[therm] (Cz) -- (Fz) node[midway,above,font=\scriptsize]{$g_z$};
+\draw[therm] (Fz) -- (Bz) node[midway,above,font=\scriptsize]{$\kappa_z$};
+\draw[drive] (dr1) -- (Fr);
+\draw[drive] (dr2) -- (Fz);
+
+\node[font=\scriptsize\itshape] at (3.25,-1.95) {reference buffer};
+\node[font=\scriptsize\itshape] at (6.15,0.72) {output buffer};
+\node[font=\scriptsize\itshape] at (3.2,-3.35) {spectral filtering};
+\node[font=\scriptsize\itshape] at (6.9,-0.72) {readout stabilization};
+\end{tikzpicture}
+\caption{Floquet--buffered thermodynamic neuron architecture.  The
+collector still forms the virtual temperature through the coherent
+three--body interaction among $C_0,C_1,C_z$, while driven intermediate
+systems $F_r(t)$ and $F_z(t)$ regulate the reference and output reservoir
+contacts.  The direct autonomous contact is recovered by setting the
+buffer couplings to zero and reconnecting the corresponding bath
+directly to the qubit.}
+\label{fig:floquet-full-architecture}
+\end{figure}
+
 \subsection{Operational metrics}
 The buffer is assessed operationally by the output trace distance
 \eqref{eq:tracedist} and by the drive--work proxy
@@ -1004,6 +1065,152 @@ GKSL phase map & robust points & $68/80$ & broad passing region \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\section{Full GKSL, HEOM, and tensor--network gate validation}
+\label{sec:heom-mps-validation}
+The final physics claim cannot rest on the bridge model alone. The
+complete validation stack should solve the same gate at three levels of
+description and demand that the logical truth table and the buffer
+advantage survive refinement.
+
+\subsection{Level 1: full time--dependent GKSL gate}
+The Markovian full-gate baseline keeps the collector, modulator, and
+buffer degrees of freedom explicitly in the system Hilbert space,
+\begin{equation}
+\rho_{\mathrm{sys}}(t)
+\in\mathcal{B}\!\left(
+\calH_{C_0}\otimes\calH_{C_1}\otimes\calH_{C_z}
+\otimes\calH_{C_M}\otimes\calH_{F_r}\otimes\calH_{F_z}
+\right),
+\end{equation}
+and evolves
+\begin{equation}
+\dot\rho_{\mathrm{sys}}(t)
+=-\ii[H_{\mathrm{gate}}(t),\rho_{\mathrm{sys}}(t)]
++\sum_{\alpha}\sum_{\omega}\gamma_{\alpha}(\omega)
+\left[
+L_{\alpha,\omega}\rho_{\mathrm{sys}}L_{\alpha,\omega}^{\dagger}
+-\tfrac12\{L_{\alpha,\omega}^{\dagger}L_{\alpha,\omega},\rho_{\mathrm{sys}}\}
+\right],
+\label{eq:full-gksl-gate}
+\end{equation}
+with $H_{\mathrm{gate}}(t)$ containing the resonant collector coupling
+$\chi$, the modulator branch, and the driven buffer Hamiltonians
+$H_{F_r}(t)$ and $H_{F_z}(t)$. The direct and buffered gates are compared
+using identical input temperatures and identical decoding:
+\begin{equation}
+\calA_{\mathrm{NOT}}
+=\frac12\sum_{x\in\{0,1\}}
+\mathbf{1}\!\left[
+\Theta(\beta_z^\infty(x)-\beta_{\mathrm{th}})=1-x
+\right],
+\qquad
+m=\min_x|\beta_z^\infty(x)-\beta_{\mathrm{th}}|.
+\end{equation}
+The GKSL level is fast enough for sweeps over drive amplitude $A$, drive
+frequency $\Omega$, system--buffer coupling $g_{SF}$, and bath-contact
+scale $\kappa$. Its job is to find candidate operating regions, not to
+prove strong--coupling physics.
+
+\subsection{Level 2: HEOM benchmark for structured reservoirs}
+To include reservoir memory without replacing it by a local dissipator,
+each structured bath is represented through a correlation-function
+decomposition
+\begin{equation}
+C_{\alpha}(t)
+=\int_0^\infty J_{\alpha}(\omega)
+\left[\coth\!\left(\frac{\beta_{\alpha}\omega}{2}\right)\cos\omega t
+-\ii\sin\omega t\right]\d\omega
+\simeq \sum_{k=0}^{K_\alpha} c_{\alpha k}\,\ee^{-\nu_{\alpha k}t}.
+\label{eq:heom-correlation}
+\end{equation}
+For a Drude--Lorentz bath,
+$J_{\alpha}(\omega)=2\lambda_{\alpha}\gamma_{\alpha}
+\omega/(\omega^2+\gamma_{\alpha}^2)$, the first exponential has
+$\nu_{\alpha0}=\gamma_{\alpha}$ and the remaining terms are Matsubara or
+Padé frequencies. The HEOM propagates the physical density matrix
+$\rho_{\mathbf{0}}$ together with auxiliary density operators (ADOs)
+$\rho_{\mathbf{n}}$:
+\begin{align}
+\dot\rho_{\mathbf{n}}
+&= -\ii[H_{\mathrm{gate}}(t),\rho_{\mathbf{n}}]
+-\sum_{\alpha k}n_{\alpha k}\nu_{\alpha k}\rho_{\mathbf{n}}
+-\ii\sum_{\alpha}[V_{\alpha},\rho_{\mathbf{n}+\mathbf{e}_{\alpha k}}]
+\nonumber\\
+&\quad
+-\ii\sum_{\alpha k}n_{\alpha k}
+\left(c_{\alpha k}V_{\alpha}\rho_{\mathbf{n}-\mathbf{e}_{\alpha k}}
+-c_{\alpha k}^{\ast}\rho_{\mathbf{n}-\mathbf{e}_{\alpha k}}V_{\alpha}\right),
+\label{eq:heom}
+\end{align}
+where $V_{\alpha}$ is the system operator coupled to bath $\alpha$. The
+hierarchy is truncated by tier
+$N_{\mathrm{tier}}=\sum_{\alpha k}n_{\alpha k}$ and by the number
+$K_\alpha$ of exponential terms. The validation checks are
+\begin{equation}
+\Delta_{\mathrm{HEOM}}
+=\max_t\norm{\rho_{\mathbf{0}}^{(N_{\mathrm{tier}},K)}(t)
+-\rho_{\mathbf{0}}^{(N_{\mathrm{tier}}+1,K+1)}(t)}_1,
+\qquad
+\Delta_{\mathrm{GKSL/HEOM}}
+=\max_t\norm{\rho_{\mathrm{GKSL}}(t)-\rho_{\mathbf{0}}(t)}_1 .
+\end{equation}
+HEOM is the preferred benchmark for reduced output or output-buffer
+subsystems because it is numerically controlled and keeps the bath memory
+kernel explicitly. For the full six-qubit-plus-buffer gate it may become
+large, so it should first validate the reference/output branches and then
+selected full-gate points from the GKSL phase map.
+
+\subsection{Level 3: chain mapping with MPS or TTN}
+For the full structured-bath gate, the scalable route is to map each
+reservoir to a one-dimensional chain,
+\begin{equation}
+H_{B_\alpha}+H_{SB_\alpha}
+\longrightarrow
+\sum_{j=0}^{N_\alpha-1}\omega_{\alpha j}a_{\alpha j}^{\dagger}a_{\alpha j}
+\sum_{j=0}^{N_\alpha-2}t_{\alpha j}
+(a_{\alpha j}^{\dagger}a_{\alpha,j+1}+\mathrm{h.c.})
+ + V_{\alpha}(a_{\alpha0}+a_{\alpha0}^{\dagger}).
+\label{eq:mps-chain-map}
+\end{equation}
+The direct geometry is naturally an MPS if the bath chains are ordered
+after the gate degrees of freedom. The buffered geometry is often better
+as a TTN: the collector/modulator sits at the root, and the reference,
+input, output, and modulator bath chains are separate branches. This
+avoids forcing all bath entanglement through one artificial MPS bond.
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Backend & What it proves & Required convergence test \\
+\midrule
+Full GKSL &
+Truth table and fast robustness map in the weak-memory limit. &
+Time step, Floquet period resolution, trace preservation, positivity,
+and agreement with reset equations when buffers are removed. \\
+HEOM &
+Structured-bath memory benchmark for selected branches and selected
+full-gate points. &
+Hierarchy tier $N_{\mathrm{tier}}$, expansion order $K$,
+Matsubara/Padé cutoff, and trace-norm convergence of $\rho_{\mathbf0}$. \\
+MPS chain &
+Full many-body structured-bath evolution with explicit reservoirs. &
+Chain length $N_\alpha$, bosonic cutoff $d$, bond dimension $\chi$,
+TDVP/Trotter time step, and recurrence-reflection time. \\
+TTN chain &
+Same physics as MPS, but with branch geometry matched to the gate. &
+Branch bond dimensions, root tensor dimension, local truncation errors,
+and comparison to MPS on small chains. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The gate is accepted only if all three statements hold: (i) the direct
+and buffered models reproduce the intended Boolean truth table; (ii) the
+buffered margin or distinguishability is positive after convergence; and
+(iii) the sign of the buffer advantage does not flip when moving from
+GKSL to HEOM and then to the MPS/TTN structured-bath simulation.
 
 \subsection{CMOS--inverter correspondence}
 The buffered output stage plays the functional role of a regulated CMOS
