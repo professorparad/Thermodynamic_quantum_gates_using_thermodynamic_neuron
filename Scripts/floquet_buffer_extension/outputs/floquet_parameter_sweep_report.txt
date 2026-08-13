@@ -1,0 +1,13 @@
+Floquet-buffer parameter sweep report
+=====================================
+
+Rows evaluated: 15
+Rows with improved trace distance: 14
+
+Best absolute trace-distance gain:
+- coupling=0.02: gain=0.711315, work=-0.019354
+
+Best gain per unit drive-work proxy:
+- coupling=0.02: gain/work=36.752860, gain=0.711315
+
+Caveat: this is a Markovian buffer-bath bridge. Treat gain/work as a screening metric, not a final thermodynamic proof.

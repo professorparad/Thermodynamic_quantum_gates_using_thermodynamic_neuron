@@ -215,5 +215,4 @@ The tests check:
 
 ## Current Caveat
 
-This is now a good **baseline analytical reconstruction**, not yet a complete microscopic simulation. The main missing physics upgrade is exact entropy production for Fig. 3C. After that, the next upgrade would be comparing this reset-model baseline against local/global GKSL simulations.
-
+This is now a good **baseline analytical reconstruction**, not yet a complete microscopic simulation. The main missing physics upgrade is exact entropy production for Fig. 3C.

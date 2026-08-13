@@ -1,0 +1,48 @@
+Thermodynamic mathematics and interpretation audit
+=================================================
+
+Purpose:
+Separate thesis-safe claims from provisional screening metrics and quantities that require a stronger thermodynamic audit.
+
+SAFE:
+- Thermal qubit occupation: g(beta epsilon) = 1 / (1 + exp(beta epsilon))
+  Regime: Baseline Markovian reset model
+  Caveat: This is a two-level thermal occupation, not a bosonic nbar factor.
+- Virtual inverse temperature: beta_v = (epsilon0 / epsilon_z) beta0 - (epsilon1 / epsilon_z) beta1
+  Regime: Baseline thermodynamic neuron
+  Caveat: Requires the collector resonance and weak-coupling interpretation.
+- Reset-model output dynamics: dot(beta_z) = - beta_z^2 (j_C + j_M) / C
+  Regime: Analytical Markovian reconstruction
+  Caveat: Not a microscopic strong-coupling bath simulation.
+- Trace preservation: |Tr rho(t) - 1|
+  Regime: All numerical reduced-state simulations
+  Caveat: Numerical-health diagnostic, not a thermodynamic observable.
+- Hermiticity error: ||rho - rho^dagger||
+  Regime: All numerical reduced-state simulations
+  Caveat: Numerical-health diagnostic.
+- Trace distance: D = 1/2 ||rho_0 - rho_1||_1
+  Regime: Markovian and non-Markovian logic-performance studies
+  Caveat: Operational distinguishability, not direct thermodynamic cost.
+
+SAFE-BASELINE-ONLY:
+- Reset-model entropy production: Sigma = integral dot(Sigma) dt with dot(Sigma) = - sum_k beta_k j_k
+  Regime: Weak coupling, local detailed balance
+  Caveat: Do not reuse as strong-coupling entropy production without bath audit.
+
+PROVISIONAL:
+- Floquet drive-work proxy: W = integral Tr[rho(t) partial_t H_F(t)] dt
+  Regime: Weak open-system Floquet bridge
+  Caveat: Useful for screening; final work requires full energy accounting.
+
+UNSAFE-BEYOND-BASELINE:
+- Reduced-system heat current beyond weak coupling: J_alpha = Tr[D_alpha(rho) H_S]
+  Regime: Invalid as stated for strong coupling or long memory
+  Caveat: Interaction energy and bath memory must be included explicitly.
+
+NOT-YET-IMPLEMENTED:
+- Strong-coupling entropy production: requires explicit bath, reaction coordinate, or Hamiltonian-of-mean-force audit
+  Regime: Full non-Markovian thermodynamic claim
+  Caveat: This is a thesis extension target, not current evidence.
+
+Thesis rule:
+Use trace distance, output population, purity, trace preservation, and Hermiticity as the main non-Markovian evidence. Use heat/work language only inside the baseline reset model or after an explicit bath-energy audit.

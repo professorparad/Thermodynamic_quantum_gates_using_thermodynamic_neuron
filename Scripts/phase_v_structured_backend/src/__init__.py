@@ -1,0 +1,1 @@
+"""Structured-bath model implementations."""

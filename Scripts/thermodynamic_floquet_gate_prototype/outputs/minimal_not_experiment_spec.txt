@@ -1,0 +1,26 @@
+Minimal Floquet-buffered thermodynamic NOT experiment
+====================================================
+
+Objective:
+Compare a direct output-reservoir contact with a Floquet-buffered output-reservoir contact for the smallest NOT-style gate prototype.
+
+Chosen baseline setting:
+- epsilon1=20.0
+- hot-input output beta=1.999961
+- cold-input output beta=1.000053
+- baseline output margin=0.999908
+
+Buffered/direct evidence to carry into the prototype:
+- default Floquet gain=0.046438
+- default drive-work proxy=0.460415
+- best ablation case=weak_system_buffer_coupling with gain=0.711315
+
+Required observables:
+- final trace distance between logical outputs
+- output excited-state population or output beta proxy
+- purity and positivity/minimum eigenvalue
+- trace and Hermiticity error
+- drive-work proxy, labelled provisional
+
+Stop criterion:
+Proceed toward the full three-qubit gate only if the buffered prototype improves distinguishability over direct contact and remains converged under time-step and memory/bath-contact checks.

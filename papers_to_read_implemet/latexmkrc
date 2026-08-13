@@ -1,0 +1,15 @@
+# latexmk configuration for papers_to_read_implemet/
+# Keeps the working directory clean:
+#   - every rendered .pdf  -> rendered_pdfs/
+#   - all build junk (.aux/.log/.fls/.fdb_latexmk/.out/.toc) -> aux/
+# Build any document with:   latexmk <file>.tex
+# (the -pdf mode and output routing are applied automatically)
+
+$pdf_mode = 1;              # produce PDF via pdflatex
+$out_dir  = 'rendered_pdfs';
+$aux_dir  = 'aux';
+
+# Images used by the documents live in figures/ (see \graphicspath in
+# each .tex). The originals are produced by the analysis code under
+# ../Scripts/*/outputs/ and are copied into figures/ for a single,
+# self-contained image folder.

@@ -1,0 +1,18 @@
+Full-ladder Floquet-buffer thermodynamic NOT prototype
+======================================================
+
+Status:
+This is a runnable three-qubit GKSL surrogate with three bath channels and an optional driven Floquet buffer on the output branch. It produces truth-table outputs, but it is not yet a full MPS/HEOM structured-bath solver.
+
+Summary:
+- direct_three_qubit: accuracy=1.000 (2/2), D_final=0.024854, W_proxy=0.000000
+- floquet_buffered_three_qubit: accuracy=1.000 (2/2), D_final=0.024120, W_proxy=-0.001813
+
+Truth table:
+- direct_three_qubit, input=0 -> decoded=1 (expected=1), beta_out=2.000013, target_beta=1.999961, correct=True
+- floquet_buffered_three_qubit, input=0 -> decoded=1 (expected=1), beta_out=1.940628, target_beta=1.999961, correct=True
+- direct_three_qubit, input=1 -> decoded=0 (expected=0), beta_out=1.000027, target_beta=1.000053, correct=True
+- floquet_buffered_three_qubit, input=1 -> decoded=0 (expected=0), beta_out=0.970526, target_beta=1.000053, correct=True
+
+Next backend upgrade:
+Replace the GKSL output bath by OQuPy/PT-MPO or HEOM structured-bath dynamics, then rerun the same truth-table interface and convergence checks.

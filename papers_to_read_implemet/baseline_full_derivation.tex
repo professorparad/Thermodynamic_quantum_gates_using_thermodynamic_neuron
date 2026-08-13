@@ -1,0 +1,1708 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, shapes.geometric, calc}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{physics}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=red!60!black,
+    urlcolor=blue!70!black
+}
+\usepackage{cleveref}
+
+% ---------------------------------------------------------------------
+% Macros
+% ---------------------------------------------------------------------
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\kB}{k_{\mathrm{B}}}
+\renewcommand{\dd}{\mathrm{d}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calC}{\mathcal{C}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\bbR}{\mathbb{R}}
+\newcommand{\bbC}{\mathbb{C}}
+\newcommand{\bbZ}{\mathbb{Z}}
+\newcommand{\bbN}{\mathbb{N}}
+\newcommand{\Cz}{C_z}
+\newcommand{\Bz}{B_z}
+\newcommand{\gz}{g_z}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}{Example}[section]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% Callout boxes for the three recurring pedagogical questions:
+%  WHERE / WHY / WHEN an approximation is made, and HOW to implement it.
+\newtcolorbox{approxbox}[1][]{
+  colback=orange!6, colframe=orange!55!black, boxrule=0.6pt,
+  breakable, left=6pt,right=6pt,top=4pt,bottom=4pt,
+  title={\bfseries Approximation --- #1}}
+\newtcolorbox{implbox}[1][]{
+  colback=blue!5, colframe=blue!45!black, boxrule=0.6pt,
+  breakable, left=6pt,right=6pt,top=4pt,bottom=4pt,
+  title={\bfseries How to implement --- #1}}
+\newtcolorbox{keybox}{
+  colback=green!6, colframe=green!45!black, boxrule=0.8pt,
+  breakable, left=6pt,right=6pt,top=4pt,bottom=4pt}
+
+\title{\bfseries A Complete, From--Scratch Derivation of the\\
+Thermodynamic Neuron\\[4pt]
+\large From a single qubit to the autonomous NOT gate and the general
+linearly--separable neuron}
+\author{Sparsho Chakraborty\\[2pt]
+\small (pedagogical companion to Lipka--Bartosik, Perarnau--Llobet \&
+Brunner, \emph{Sci.\ Adv.} \textbf{10}, eadm8792, 2024)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This note rebuilds the ``thermodynamic neuron'' of
+Ref.~\cite{LipkaBartosik2024} from the ground up, at the level of detail
+a student needs in order to reproduce every equation by hand and in
+code. We start from a single qubit in a heat bath and derive, step by
+step: (i) the thermal (Gibbs) state and the Fermi--Dirac/sigmoid
+occupation; (ii) the open--system master equation, showing explicitly
+\emph{where the bath Hamiltonian goes} and \emph{why there is no
+surviving qubit--bath interaction Hamiltonian in the final equations}
+--- the single most common point of confusion; (iii) the reset
+(collisional) thermalization model and its heat current; (iv) the
+three--qubit machine, the \emph{virtual qubit}, and the \emph{virtual
+temperature}; (v) the full interaction Hamiltonian of the collector and
+why it must be a three--body, energy--conserving swap; (vi) why the
+collector alone is only a linear amplifier and hence \emph{why the
+modulator is needed}; (vii) the two--time--scale dynamics, the
+steady--state transfer characteristic, and the emergence of the sigmoid;
+(viii) logic encoding, readout error, and the error--dissipation
+trade--off; and (ix) the generalization to any linearly--separable
+Boolean function and its exact correspondence with the perceptron. Every
+approximation is called out in an orange box (\emph{where, why, when}),
+and every result is accompanied by a blue box explaining \emph{how to
+implement it} in QuTiP. Equation numbers of the source paper are quoted
+throughout as ``[paper Eq.~(n)]''.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\part*{Reading guide}
+\addcontentsline{toc}{part}{Reading guide}
+
+The derivation is organized as a ladder. Each rung is self--contained and
+ends with the object the next rung needs.
+
+\begin{center}
+\begin{tabular}{@{}rl@{}}
+\toprule
+Part & What is built \\
+\midrule
+I   & One qubit $\to$ open--system master equation $\to$ reset model
+      $\to$ multi--qubit machine. \\
+II  & Two qubits $\to$ virtual qubit $\to$ virtual temperature $\to$
+      resonant three--body interaction. \\
+III & Collector $+$ modulator $\to$ dynamics $\to$ transfer curve
+      $\to$ sigmoid $\to$ NOT gate $\to$ error/dissipation. \\
+IV  & $n$--input neuron $\to$ perceptron equivalence $\to$ design
+      algorithm $\to$ NOR, MAJORITY, XOR networks. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Three questions are answered repeatedly and are flagged with coloured
+boxes:
+\begin{itemize}[leftmargin=*]
+\item \textbf{\textcolor{orange!70!black}{Approximation boxes}} state
+\emph{which} approximation is made, \emph{why} it is legitimate, and
+\emph{when} (in which parameter regime) it holds.
+\item \textbf{\textcolor{blue!60!black}{Implementation boxes}} translate
+each result into concrete QuTiP objects.
+\end{itemize}
+
+% #####################################################################
+\part{Physical foundations: from one qubit to a thermal machine}
+\label{part:foundations}
+% #####################################################################
+
+\section{The single qubit}
+\label{sec:single-qubit}
+
+\subsection{Hilbert space, states, Hamiltonian}
+A qubit is a two--level quantum system. Its Hilbert space is
+$\calH = \bbC^2$, with an orthonormal basis given by the ground state
+$\ket{0}$ and the excited state $\ket{1}$,
+\begin{equation}
+\ket{0} = \begin{pmatrix}1\\0\end{pmatrix},\qquad
+\ket{1} = \begin{pmatrix}0\\1\end{pmatrix},\qquad
+\braket{i}{j} = \delta_{ij}.
+\end{equation}
+A general (possibly mixed) state is a density operator $\rho$: a
+positive semidefinite, Hermitian, unit--trace operator,
+\begin{equation}
+\rho = \rho^\dagger \succeq 0,\qquad \Tr\rho = 1 .
+\end{equation}
+The free Hamiltonian assigns energies $E_0$ and $E_1>E_0$ to the two
+levels,
+\begin{equation}
+H = E_0\ket{0}\bra{0} + E_1\ket{1}\bra{1}.
+\label{eq:H-two-energies}
+\end{equation}
+Only \emph{energy differences} are physical, so we are free to set the
+zero of energy at the ground state, $E_0 = 0$. Then
+\begin{equation}
+\boxed{\,H = \epsilon\,\ket{1}\bra{1} = \epsilon\, n,\qquad
+\epsilon := E_1 - E_0,\quad n := \ket{1}\bra{1}.\,}
+\label{eq:H-single}
+\end{equation}
+The single number $\epsilon$ --- the \emph{energy gap} --- completely
+specifies the qubit. This is exactly the Hamiltonian
+$H = E_0\ket{0}\bra{0}+E_1\ket{1}\bra{1}$ of [paper, Sec.~II\,A\,2] with
+$E_0=0$.
+
+\begin{remark}
+It is often convenient to use Pauli operators. With
+$\sigma_z = \ket{0}\bra{0}-\ket{1}\bra{1}$ one has
+$n = \tfrac12(\mathbb{1}-\sigma_z)$, so
+$H = \tfrac{\epsilon}{2}(\mathbb{1}-\sigma_z)$, which equals
+$-\tfrac{\epsilon}{2}\sigma_z$ up to the physically irrelevant constant
+$\tfrac{\epsilon}{2}\mathbb{1}$. We keep the form $\epsilon\, n$ because
+the ``excited--state population'' $n$ is the quantity we will read out.
+The raising/lowering operators are
+$\sigma_+ = \ket{1}\bra{0}$, $\sigma_- = \ket{0}\bra{1}$, with
+$\sigma_x=\sigma_++\sigma_-$.
+\end{remark}
+
+\subsection{The thermal (Gibbs) state and the partition function}
+Suppose the qubit is left in contact with a large heat bath at inverse
+temperature $\beta = 1/(\kB T)$ for a long time. Statistical mechanics
+tells us it settles into the canonical (Gibbs) state
+\begin{equation}
+\tau(\beta) := \frac{\ee^{-\beta H}}{Z},\qquad
+Z := \Tr\,\ee^{-\beta H} = 1 + \ee^{-\beta\epsilon}.
+\label{eq:gibbs}
+\end{equation}
+Because $H$ is diagonal, so is $\tau(\beta)$:
+\begin{equation}
+\tau(\beta) = \frac{1}{1+\ee^{-\beta\epsilon}}\ket{0}\bra{0}
+            + \frac{\ee^{-\beta\epsilon}}{1+\ee^{-\beta\epsilon}}
+              \ket{1}\bra{1}.
+\label{eq:gibbs-explicit}
+\end{equation}
+This is [paper Eq.~(8)] for a single qubit.
+
+\subsection{Excited population = Fermi--Dirac = sigmoid}
+The probability that the qubit is found excited is the $\ket{1}\bra{1}$
+matrix element of $\tau(\beta)$,
+\begin{equation}
+g(\beta\epsilon) := \bra{1}\tau(\beta)\ket{1}
+= \frac{\ee^{-\beta\epsilon}}{1+\ee^{-\beta\epsilon}}
+= \frac{1}{1+\ee^{\beta\epsilon}} .
+\label{eq:fermi}
+\end{equation}
+The last equality (multiply numerator and denominator by
+$\ee^{+\beta\epsilon}$) is [paper Eq.~(2)]. Three facts about $g$ will be
+used constantly:
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item \textbf{It is the Fermi--Dirac function}, monotonically decreasing
+in $\beta\epsilon$, with $g(-\infty)=1$, $g(0)=\tfrac12$,
+$g(+\infty)=0$.
+\item \textbf{It is the logistic sigmoid} $f(x) = (1+\ee^{x})^{-1}$
+evaluated at $x=\beta\epsilon$. This single identity is the seed of the
+entire neuron--perceptron analogy: a thermal population \emph{is} a
+sigmoid of an (inverse) temperature.
+\item \textbf{Detailed--balance ratio.} From \eqref{eq:gibbs-explicit},
+\begin{equation}
+\frac{\bra{1}\tau(\beta)\ket{1}}{\bra{0}\tau(\beta)\ket{0}}
+= \ee^{-\beta\epsilon}.
+\label{eq:db-ratio}
+\end{equation}
+The ratio of excited to ground population is the Boltzmann factor. This
+is the microscopic fingerprint of temperature and is the property every
+thermalization model must reproduce.
+\end{enumerate}
+
+\begin{implbox}[the thermal state]
+In QuTiP: \texttt{H = eps * create(2)*destroy(2)} (i.e.\ $\epsilon\,n$),
+and the Gibbs state is \texttt{tau = (-beta*H).expm(); tau/=tau.tr()}.
+The excited population is \texttt{expect(num(2), tau)}, which returns
+$g(\beta\epsilon)$ of \eqref{eq:fermi}. Equivalently
+\texttt{g = 1/(1+np.exp(beta*eps))}.
+\end{implbox}
+
+% ---------------------------------------------------------------------
+\section{Open quantum systems: where the bath Hamiltonian goes}
+\label{sec:open}
+
+This section answers the question your reader raised: \emph{if the qubit
+is coupled to a bath, where is the qubit--bath interaction Hamiltonian in
+the equations, and why does it disappear?} The short answer: it is still
+there microscopically, but after we (i) enlarge the description to
+system$+$bath, (ii) assume weak coupling and short bath memory, and
+(iii) trace the bath out, the interaction Hamiltonian is \emph{converted}
+into the dissipator $\calL[\rho]$ --- a term acting on the system alone.
+We now show this explicitly.
+
+\subsection{Why a closed qubit never thermalizes}
+A closed quantum system evolves unitarily, $\rho(t) = U(t)\rho(0)
+U^\dagger(t)$ with $U=\ee^{-\ii Ht}$. For the single qubit
+\eqref{eq:H-single}, $[\rho,H]$ generates only phases: the populations
+$\bra{0}\rho\ket{0}$, $\bra{1}\rho\ket{1}$ are constant in time.
+A closed qubit therefore \emph{cannot} relax to the Gibbs state
+\eqref{eq:gibbs}; it just keeps whatever populations it started with.
+Thermalization, dissipation, and irreversibility are impossible without
+an environment. This is the physical reason a bath is not optional: it
+is the only object in the model that can change populations and drive
+the system to a steady state.
+
+\subsection{The microscopic system$+$bath$+$interaction Hamiltonian}
+We restore the environment explicitly. Model the bath as a large
+collection of harmonic oscillators (the standard Caldeira--Leggett /
+quantum--optics reservoir),
+\begin{equation}
+H_B = \sum_k \omega_k\, a_k^\dagger a_k ,
+\label{eq:HB}
+\end{equation}
+with bosonic modes $[a_k,a_{k'}^\dagger]=\delta_{kk'}$. The qubit couples
+to the bath \emph{bilinearly and transversally},
+\begin{equation}
+H_{SB} = \sigma_x \otimes B, \qquad
+B := \sum_k \lambda_k\,(a_k + a_k^\dagger),
+\label{eq:HSB}
+\end{equation}
+where $B$ is a bath ``force'' operator and $\lambda_k$ are coupling
+constants. The \emph{total} Hamiltonian on $\calH_S\otimes\calH_B$ is
+\begin{equation}
+\boxed{\,H_{\mathrm{tot}} = \underbrace{H_S}_{\epsilon\, n}
+\;+\; \underbrace{H_B}_{\sum_k\omega_k a_k^\dagger a_k}
+\;+\; \underbrace{H_{SB}}_{\sigma_x\otimes B}\, .}
+\label{eq:Htot-open}
+\end{equation}
+Two modelling choices deserve a word, because they are exactly the
+places where physics enters.
+
+\begin{approxbox}[bilinear coupling, \eqref{eq:HSB}]
+\textbf{Where:} the system--bath term is taken linear in the bath
+operators, $H_{SB}=\sigma_x\otimes\sum_k\lambda_k(a_k+a_k^\dagger)$.
+\textbf{Why:} this is the leading term in an expansion of a generic
+coupling in bath displacements; it is \emph{exact} for a Gaussian
+(harmonic) environment. \textbf{When:} valid whenever the environment
+responds linearly (weak, non--saturating coupling), which is the regime
+of local detailed balance we ultimately need.
+\end{approxbox}
+
+\begin{remark}[why $\sigma_x$ and not $\sigma_z$]
+The qubit operator in \eqref{eq:HSB} is \emph{transverse}
+($\sigma_x=\sigma_++\sigma_-$). It must be, because to thermalize the
+bath has to be able to \emph{flip} the qubit between $\ket{0}$ and
+$\ket{1}$, exchanging the energy quantum $\epsilon$. A longitudinal
+coupling $\sigma_z\otimes B$ commutes with $H_S$ and only randomizes the
+phase (pure dephasing): it can never change populations and thus never
+produces a thermal state. Keep this contrast in mind --- when we later
+add a Floquet drive we will deliberately make it \emph{longitudinal},
+precisely so that it does \emph{not} pump populations.
+\end{remark}
+
+\subsection{Tracing out the bath: the Born--Markov--secular derivation}
+\label{sec:BMS}
+We want an equation for the reduced system state
+$\rho(t) := \Tr_B\,\rho_{\mathrm{tot}}(t)$ alone. Move to the interaction
+picture with respect to $H_0 := H_S+H_B$ (tilde denotes interaction
+picture),
+\begin{equation}
+\tilde H_{SB}(t) = \ee^{\ii H_0 t} H_{SB} \ee^{-\ii H_0 t}
+= \tilde\sigma_x(t)\otimes \tilde B(t).
+\end{equation}
+The exact (von Neumann) equation
+$\dot{\tilde\rho}_{\mathrm{tot}}=-\ii[\tilde H_{SB}(t),
+\tilde\rho_{\mathrm{tot}}]$ is integrated once and resubstituted, giving
+the exact integro--differential equation
+\begin{equation}
+\dot{\tilde\rho}_{\mathrm{tot}}(t)
+= -\ii[\tilde H_{SB}(t),\rho_{\mathrm{tot}}(0)]
+  - \int_0^t \dd s\,
+  [\tilde H_{SB}(t),[\tilde H_{SB}(s),\tilde\rho_{\mathrm{tot}}(s)]].
+\label{eq:exact-integro}
+\end{equation}
+Tracing over the bath and applying three successive, clearly labelled
+approximations turns this into a time--local master equation.
+
+\begin{approxbox}[(A1) Born / weak coupling]
+\textbf{Where:} we assume the state stays factorized,
+$\rho_{\mathrm{tot}}(s)\approx \rho(s)\otimes\rho_B$, with $\rho_B$ the
+fixed thermal state of the bath. \textbf{Why:} the coupling
+$\lambda_k$ is weak, so system--bath correlations built up are
+$O(\lambda^2)$ and negligible in the leading dissipator. \textbf{When:}
+$\lambda$ (equivalently the induced rate $\gamma$) much smaller than the
+system gap $\epsilon$ and the bath bandwidth. Choosing $\rho_B$ thermal
+and $\Tr_B[B\rho_B]=0$ kills the first term of
+\eqref{eq:exact-integro}.
+\end{approxbox}
+
+\begin{approxbox}[(A2) Markov / short bath memory]
+\textbf{Where:} replace $\tilde\rho(s)\to\tilde\rho(t)$ in the integral
+and send the lower limit to $-\infty$. \textbf{Why:} the bath
+correlation function
+$C(\tau)=\Tr_B[\tilde B(\tau)B\,\rho_B]$ decays on a microscopic time
+$\tau_c$ much shorter than the system's relaxation time, so the system
+has no memory of its past on the scale that matters. \textbf{When:}
+$\tau_c \ll 1/\gamma$. This is the step that makes the equation
+\emph{time--local} (memoryless).
+\end{approxbox}
+
+After (A1)--(A2), tracing out the bath yields the Redfield equation. Its
+rates are the one--sided Fourier transforms of the bath correlation
+function evaluated at the qubit's Bohr frequency $\pm\epsilon$:
+\begin{equation}
+\gamma(\omega) := \int_{-\infty}^{\infty}\dd\tau\,
+\ee^{\ii\omega\tau}\,C(\tau)
+= 2\pi\, J(\omega)\,[1+n_{\mathrm{B}}(\omega)],
+\label{eq:rate-fourier}
+\end{equation}
+where $J(\omega)=\sum_k\lambda_k^2\delta(\omega-\omega_k)$ is the
+\emph{spectral density} and $n_{\mathrm B}$ the Bose occupation. The
+last, purely mathematical, step secures complete positivity.
+
+\begin{approxbox}[(A3) secular / rotating--wave]
+\textbf{Where:} drop terms rotating at $\ee^{\pm 2\ii\epsilon t}$ in the
+interaction--picture dissipator. \textbf{Why:} they oscillate fast
+compared to the slow relaxation $\gamma$ and average to zero over the
+relaxation time. \textbf{When:} $\gamma\ll\epsilon$ (well--resolved
+gap). This step guarantees the generator is of Lindblad (GKSL) form and
+hence completely positive.
+\end{approxbox}
+
+The result, back in the Schr\"odinger picture, is the GKSL master
+equation
+\begin{equation}
+\boxed{\;
+\dot\rho = -\ii[H_S,\rho]
++ \gamma_\downarrow\Big(\sigma_-\rho\sigma_+
+   -\tfrac12\{\sigma_+\sigma_-,\rho\}\Big)
++ \gamma_\uparrow\Big(\sigma_+\rho\sigma_-
+   -\tfrac12\{\sigma_-\sigma_+,\rho\}\Big).
+\;}
+\label{eq:GKSL-qubit}
+\end{equation}
+This is the promised structure $\dot\rho = -\ii[H,\rho]+\calL[\rho]$ of
+[paper Eq.~(1)]. \textbf{Here is the answer to the reader's question:}
+the interaction Hamiltonian $H_{SB}=\sigma_x\otimes B$ is \emph{no longer
+present as a Hamiltonian}. It has been converted, by the elimination of
+the bath, into the two dissipative channels of \eqref{eq:GKSL-qubit}:
+\begin{itemize}[leftmargin=*]
+\item $\gamma_\downarrow$ multiplies $\sigma_-$ (emission: the qubit
+gives a quantum $\epsilon$ to the bath);
+\item $\gamma_\uparrow$ multiplies $\sigma_+$ (absorption: the qubit
+takes a quantum $\epsilon$ from the bath).
+\end{itemize}
+The bath Hamiltonian $H_B$ has disappeared entirely; the coupling
+$H_{SB}$ survives only through the two numbers
+$\gamma_\downarrow,\gamma_\uparrow$. \emph{That} is why the working
+equations of the paper contain a free Hamiltonian $H_S$ and a dissipator
+$\calL$, but no qubit--bath interaction Hamiltonian: the latter was spent
+to build $\calL$.
+
+\subsection{Detailed balance fixes the ratio of the rates}
+The two rates are not independent. The Kubo--Martin--Schwinger (KMS)
+condition of a thermal bath forces
+$\gamma(-\omega)=\ee^{-\beta\omega}\gamma(\omega)$; applied to
+$\omega=\epsilon$,
+\begin{equation}
+\frac{\gamma_\uparrow}{\gamma_\downarrow} = \ee^{-\beta\epsilon}.
+\label{eq:db-rates}
+\end{equation}
+This is \emph{local detailed balance}. Its whole purpose is to guarantee
+that the steady state of \eqref{eq:GKSL-qubit} reproduces the Boltzmann
+ratio \eqref{eq:db-ratio}. Indeed, writing $p:=\bra{1}\rho\ket{1}$, the
+populations obey the classical rate equation
+\begin{equation}
+\dot p = \gamma_\uparrow(1-p) - \gamma_\downarrow\, p ,
+\label{eq:pop-rate}
+\end{equation}
+whose fixed point $\dot p=0$ is
+\begin{equation}
+p_{\mathrm{ss}}
+= \frac{\gamma_\uparrow}{\gamma_\uparrow+\gamma_\downarrow}
+= \frac{\ee^{-\beta\epsilon}}{1+\ee^{-\beta\epsilon}}
+= g(\beta\epsilon).
+\end{equation}
+The qubit relaxes to exactly the thermal excited population
+\eqref{eq:fermi}, as it must.
+
+\begin{keybox}
+\textbf{Summary of Sec.~\ref{sec:open}.} Coupling a qubit to a bath
+means writing $H_{\mathrm{tot}}=H_S+H_B+H_{SB}$; eliminating the bath
+under weak coupling (A1), short memory (A2) and secular averaging (A3)
+turns $H_{SB}$ into a dissipator $\calL[\rho]$ acting on the system
+alone. The bath's only fingerprints in the final equation are the two
+rates, whose ratio is pinned by detailed balance
+$\gamma_\uparrow/\gamma_\downarrow=\ee^{-\beta\epsilon}$ so that the
+steady state is the Gibbs state. This is why the paper never writes an
+explicit qubit--bath interaction Hamiltonian.
+\end{keybox}
+
+\subsection{The reset model: a minimal thermalization dissipator}
+\label{sec:reset}
+Equation \eqref{eq:GKSL-qubit} is more detail than the logic of the gate
+needs. Since only the \emph{populations} matter (the steady states are
+diagonal), the paper adopts the simplest dissipator with the correct
+fixed point: the \emph{reset model} [paper, Sec.~II\,A\,3],
+\begin{equation}
+\boxed{\;
+\calL^{(k)}[\rho] = \gamma_k\Big(\Tr_k[\rho]\otimes\tau(\beta_k)
+- \rho\Big).
+\;}
+\label{eq:reset}
+\end{equation}
+Its interpretation is collisional: in each infinitesimal interval, qubit
+$k$ has probability $\gamma_k\,\dd t$ of being ``reset'' --- swapped for a
+fresh qubit drawn from the bath's thermal state $\tau(\beta_k)$ ---
+and probability $1-\gamma_k\,\dd t$ of being left alone. $\Tr_k[\rho]$
+is the partial trace over qubit $k$ (the rest of the machine), so
+$\Tr_k[\rho]\otimes\tau(\beta_k)$ is the state \emph{after} a full
+thermalization event on qubit $k$.
+
+\begin{approxbox}[(A4) reset thermalization, \eqref{eq:reset}]
+\textbf{Where:} we replace the microscopically derived dissipator
+\eqref{eq:GKSL-qubit} by the reset form \eqref{eq:reset}.
+\textbf{Why:} both share the same fixed point (the local Gibbs state,
+$\calL^{(k)}[\tau(\beta_k)]=0$) and the same detailed balance; the reset
+model just fixes the relaxation to be a single rate $\gamma_k$ for all
+observables. \textbf{When:} whenever only steady--state populations and
+their thermodynamics are needed --- which is the whole computation.
+Changing the thermalization model changes the exact nonlinear shape of
+the transfer curve but not the machine's ability to invert
+temperatures (this is stated explicitly around [paper Eq.~(23)]).
+\end{approxbox}
+
+For a single qubit, \eqref{eq:reset} reduces to
+$\calL[\rho]=\gamma(\tau(\beta)-\rho)$, whose population equation is
+$\dot p=\gamma[g(\beta\epsilon)-p]$ --- the same fixed point as before,
+with relaxation rate $\gamma$.
+
+\subsection{Heat current}
+The heat delivered from a qubit to its bath is the energy the dissipator
+removes from the system,
+\begin{equation}
+j_k := \Tr\!\big[H\,\calL^{(k)}[\rho]\big].
+\label{eq:current-def}
+\end{equation}
+This is [paper Eq.~(5)]. For the reset model \eqref{eq:reset} with a
+single qubit of gap $\epsilon_k$ and excited population $p_k$,
+\begin{align}
+j_k
+&= \Tr\!\big[\epsilon_k n\,\gamma_k(\tau(\beta_k)-\rho)\big]
+= \gamma_k\epsilon_k\big(\bra{1}\tau(\beta_k)\ket{1} - p_k\big)
+\nonumber\\
+&= \boxed{\,\gamma_k\epsilon_k\big[g(\beta_k\epsilon_k) - p_k\big].\,}
+\label{eq:current-reset}
+\end{align}
+This is [paper Eq.~(6)]. The sign convention: $j_k>0$ when the bath
+pumps energy into the qubit ($g(\beta_k\epsilon_k)>p_k$, the qubit is
+colder than its bath). A qubit coupled to \emph{two} baths simply gets
+the sum of two such dissipators, and the total current is the sum ---
+a fact we will use for the modulator.
+
+\begin{implbox}[the reset dissipator and current]
+In QuTiP the reset dissipator is most easily built as a rate times the
+difference of superoperators, or, for populations only, integrated as
+the classical rate equation \eqref{eq:pop-rate}. For a full Lindblad
+simulation one instead uses collapse operators
+$\{\sqrt{\gamma_\downarrow}\,\sigma_-,\sqrt{\gamma_\uparrow}\,\sigma_+\}$
+with $\gamma_\downarrow=\gamma(1-g)$, $\gamma_\uparrow=\gamma g$,
+$g=g(\beta\epsilon)$; \texttt{mesolve} then reproduces
+\eqref{eq:current-reset} as
+\texttt{expect(H, rho)}'s rate of change due to that bath.
+\end{implbox}
+
+% ---------------------------------------------------------------------
+\section{Multi--qubit thermal machines}
+\label{sec:machine}
+
+\subsection{Free and interaction Hamiltonian}
+A machine is several qubits, labelled $k$, each with gap $\epsilon_k$.
+The free Hamiltonian is the sum
+\begin{equation}
+H_0 = \sum_k \epsilon_k\,\ket{1}\bra{1}_k ,
+\label{eq:H0-machine}
+\end{equation}
+where $\ket{1}\bra{1}_k$ acts as identity on all other qubits. The
+qubits are coupled by a \emph{time--independent, energy--preserving}
+interaction $H_{\mathrm{int}}$, meaning
+\begin{equation}
+[H_{\mathrm{int}}, H_0] = 0 .
+\label{eq:energy-preserving}
+\end{equation}
+Equation \eqref{eq:energy-preserving} is a strong and deliberate
+constraint. It says the interaction can only connect
+\emph{degenerate} eigenstates of $H_0$ --- it shuffles excitations among
+qubits without changing the total bare energy. We will see in
+Sec.~\ref{sec:interaction} that this single requirement, together with a
+resonance condition on the gaps, \emph{uniquely} dictates the form of
+the collector's three--body term.
+
+\begin{approxbox}[(A5) energy--preserving interaction, \eqref{eq:energy-preserving}]
+\textbf{Where:} $[H_{\mathrm{int}},H_0]=0$. \textbf{Why:} in the weak
+internal--coupling regime, any non--commuting (energy--changing) part of
+the interaction is off--resonant and averages away under the same
+rotating--wave logic as (A3); only the energy--conserving, secular part
+survives to influence the steady state. \textbf{When:} coupling
+$\chi\ll$ the gaps, so that off--resonant transitions are suppressed by
+$\chi/\epsilon$. This is what justifies the local master equation
+\eqref{eq:local-me} below.
+\end{approxbox}
+
+\subsection{The local master equation}
+Each qubit $k$ is weakly coupled to its own bath $B_k$ at inverse
+temperature $\beta_k$. Under weak coupling the machine obeys the
+\emph{local} master equation
+\begin{equation}
+\dot\rho = -\ii[H_0 + H_{\mathrm{int}},\rho]
++ \sum_k \calL^{(k)}[\rho],
+\label{eq:local-me}
+\end{equation}
+with each $\calL^{(k)}$ the reset dissipator \eqref{eq:reset} for its own
+bath. This is [paper Eq.~(3)]. ``Local'' means each dissipator is built
+from the \emph{bare} qubit operators, not the dressed eigenstates of
+$H_0+H_{\mathrm{int}}$.
+
+\begin{approxbox}[(A6) local vs.\ global master equation]
+\textbf{Where:} the dissipators in \eqref{eq:local-me} act on individual
+bare qubits. \textbf{Why:} when $H_{\mathrm{int}}$ is weak compared with
+the gaps, the eigenstates of $H_0+H_{\mathrm{int}}$ are close to the bare
+product states, and the local dissipator is both simpler and
+thermodynamically consistent. \textbf{When:} $\chi \ll \epsilon_k$; in
+the opposite (strong internal coupling) regime one must use the global
+dissipator built from the dressed eigenoperators, otherwise small
+violations of the second law can appear (Hofer \emph{et al.}, cited as
+[51] in the paper). We stay local throughout.
+\end{approxbox}
+
+\subsection{Local detailed balance and heat currents}
+The key property inherited from Sec.~\ref{sec:open} is that each local
+dissipator has the local Gibbs state as a zero,
+\begin{equation}
+\calL^{(k)}[\tau(\beta_k)] = 0 ,
+\label{eq:ldb}
+\end{equation}
+which is [paper Eq.~(4)]. The heat current into bath $k$ is again
+\eqref{eq:current-def}, and, crucially, in a nonequilibrium steady state
+(NESS) the machine's own entropy is constant, so all the entropy the
+machine produces is dumped into the baths.
+
+\subsection{Entropy production and the second law}
+Define the machine's von Neumann entropy $S(\rho) = -\Tr[\rho\ln\rho]$.
+The entropy production rate is
+\begin{equation}
+\dot\Sigma := \dot S(\rho(t)) - \sum_k \beta_k\, j_k(t) \;\ge\; 0,
+\label{eq:entropy-prod}
+\end{equation}
+which is [paper Eq.~(7)] and is the second law for this class of
+machines. In the steady state $\dot S = 0$, so
+$\dot\Sigma = -\sum_k\beta_k j_k \ge 0$ is purely the weighted heat
+dumped into the environments. This quantity is the ``dissipation'' whose
+trade--off against computational accuracy we quantify in
+Part~\ref{part:notgate}. It is also the microscopic meaning of the
+``information lost to the environment'' discussed qualitatively in the
+Floquet--buffer note.
+
+\begin{keybox}
+\textbf{End of Part I.} We now have every generic tool: a free
+Hamiltonian $H_0=\sum_k\epsilon_k n_k$, an energy--preserving interaction
+$H_{\mathrm{int}}$ (still to be constructed), a local reset dissipator
+$\sum_k\calL^{(k)}$ with detailed balance, a heat current
+$j_k=\gamma_k\epsilon_k[g(\beta_k\epsilon_k)-p_k]$, and an entropy
+production $\dot\Sigma\ge0$. Part II uses two qubits to build the virtual
+qubit; Part III assembles the NOT gate.
+\end{keybox}
+
+% #####################################################################
+\part{The virtual qubit and the resonant interaction}
+\label{part:virtual}
+% #####################################################################
+
+\section{Two thermal qubits and the virtual qubit}
+\label{sec:virtual}
+
+\subsection{The product thermal state}
+Take two qubits $C_0,C_1$ with gaps $\epsilon_0$ and
+$\epsilon_1\le\epsilon_0$, each in contact with its own bath at inverse
+temperature $\beta_0,\beta_1$. In the absence of any interaction, each
+qubit independently reaches its Gibbs state \eqref{eq:gibbs-explicit},
+\begin{equation}
+\tau_{C_i}(\beta_i)
+= \frac{1}{Z_{C_i}}\Big(\ket{0}\bra{0}_{C_i}
++ \ee^{-\beta_i\epsilon_i}\ket{1}\bra{1}_{C_i}\Big),\quad
+Z_{C_i}=1+\ee^{-\beta_i\epsilon_i},
+\label{eq:tauCi}
+\end{equation}
+[paper Eq.~(8)]. The joint state is the product
+$\tau_{C_0}(\beta_0)\otimes\tau_{C_1}(\beta_1)$, diagonal in the four
+states $\ket{i}_{C_0}\ket{j}_{C_1}$, $i,j\in\{0,1\}$, with populations
+\begin{equation}
+\begin{aligned}
+&P_{00}=p_0(0)\,p_1(0), &\quad& P_{01}=p_0(0)\,p_1(1),\\
+&P_{10}=p_0(1)\,p_1(0), &\quad& P_{11}=p_0(1)\,p_1(1),
+\end{aligned}
+\label{eq:Pij}
+\end{equation}
+where $P_{ij}:=\bra{ij}\,\tau_{C_0}\!\otimes\tau_{C_1}\,\ket{ij}$ is the
+joint population of $\ket{i}_{C_0}\ket{j}_{C_1}$, and
+$p_i(1)=g(\beta_i\epsilon_i)$, $p_i(0)=1-p_i(1)$.
+
+\subsection{The virtual qubit subspace}
+Focus on the two ``crossed'' states
+\begin{equation}
+\ket{0}_v := \ket{0}_{C_0}\ket{1}_{C_1},\qquad
+\ket{1}_v := \ket{1}_{C_0}\ket{0}_{C_1}.
+\label{eq:virtual-states}
+\end{equation}
+This is [paper Eq.~(15)] (collector convention). They span a
+two--dimensional subspace of the four--dimensional joint space --- a
+\emph{virtual qubit}. Its energy gap is the difference of the bare
+energies of the two states,
+\begin{equation}
+\epsilon_v := E(\ket{1}_v) - E(\ket{0}_v) = \epsilon_0 - \epsilon_1 .
+\label{eq:eps-v}
+\end{equation}
+The name ``virtual'' is literal: no physical two--level system with gap
+$\epsilon_v$ exists; it is an effective qubit encoded in a corner of the
+joint Hilbert space of $C_0$ and $C_1$.
+
+\subsection{The virtual temperature}
+Assign the virtual qubit a temperature exactly as we did for a real one,
+via its population ratio \eqref{eq:db-ratio}. Using
+\eqref{eq:Pij} and the Boltzmann ratios
+$p_i(1)/p_i(0)=\ee^{-\beta_i\epsilon_i}$,
+\begin{equation}
+\ee^{-\beta_v\epsilon_v}
+:= \frac{\bra{1}_v\,\tau_{C_0}\!\otimes\tau_{C_1}\,\ket{1}_v}
+        {\bra{0}_v\,\tau_{C_0}\!\otimes\tau_{C_1}\,\ket{0}_v}
+= \frac{P_{10}}{P_{01}}
+= \frac{p_0(1)p_1(0)}{p_0(0)p_1(1)}
+= \frac{\ee^{-\beta_0\epsilon_0}}{\ee^{-\beta_1\epsilon_1}} .
+\label{eq:betav-ratio}
+\end{equation}
+This is [paper Eq.~(10)]. Taking logarithms,
+$\beta_v\epsilon_v = \beta_0\epsilon_0-\beta_1\epsilon_1$, and dividing
+by $\epsilon_v=\epsilon_0-\epsilon_1$,
+\begin{equation}
+\boxed{\;
+\beta_v = \frac{\epsilon_0}{\epsilon_0-\epsilon_1}\,\beta_0
+        - \frac{\epsilon_1}{\epsilon_0-\epsilon_1}\,\beta_1 .
+\;}
+\label{eq:betav}
+\end{equation}
+This is [paper Eq.~(11)/(16)]. The virtual (inverse) temperature is a
+\emph{linear combination of the input inverse temperatures}, with
+weights set by the energy gaps. \emph{This is the weighted sum of the
+perceptron}, and it is the reason the machine computes. Note that
+$\beta_v$ can exceed both $\beta_0,\beta_1$, lie between them, or go
+negative --- the three regimes below.
+
+\subsection{Refrigerator, heat pump, heat engine}
+Holding $\beta_0$ fixed and varying $\beta_1$ in \eqref{eq:betav}:
+\begin{itemize}[leftmargin=*]
+\item $\beta_1<\beta_0$ (hot input): $\beta_v$ is larger than both
+$\beta_0$ and $\beta_1$ --- the virtual qubit is \emph{colder} than
+either bath; coupling a target to it \emph{cools} the target
+(refrigerator).
+\item $\beta_0<\beta_1<(\epsilon_0/\epsilon_1)\beta_0$: $\beta_v$ is
+smaller than both --- \emph{hotter} virtual qubit (heat pump).
+\item $\beta_1>(\epsilon_0/\epsilon_1)\beta_0$: $\beta_v<0$ ---
+population inversion (heat engine).
+\end{itemize}
+These are the regions of [paper Fig.~2]. The ability of a single knob
+$\beta_1$ to move the target across cooling/heating is the physical basis
+of temperature inversion, i.e.\ of the NOT gate.
+
+\begin{implbox}[virtual temperature]
+Directly: \texttt{beta\_v = (eps0/(eps0-eps1))*beta0 -
+(eps1/(eps0-eps1))*beta1}. As a check, build
+\texttt{tau01 = tensor(thermal(beta0,eps0), thermal(beta1,eps1))} and
+verify \eqref{eq:betav-ratio}: the ratio of the $\ket{10}$ and
+$\ket{01}$ diagonal entries equals $\ee^{-\beta_v(\epsilon_0-\epsilon_1)}$.
+\end{implbox}
+
+% ---------------------------------------------------------------------
+\section{Adding the target qubit: the resonant three--body interaction}
+\label{sec:interaction}
+
+We now derive --- not quote --- the collector's interaction Hamiltonian,
+the object your reader most wants to see written out and justified.
+
+\subsection{The resonance condition}
+Introduce a third qubit $C_z$ with gap $\epsilon_z$, intended to be
+placed in ``thermal contact'' with the virtual qubit so that it inherits
+$\beta_v$. For a weak, energy--preserving interaction to move excitations
+between the virtual qubit and $C_z$, the two must be \emph{resonant}:
+the energy released by de--exciting the virtual qubit must exactly
+excite $C_z$. Hence we \emph{choose}
+\begin{equation}
+\boxed{\;\epsilon_z = \epsilon_v = \epsilon_0 - \epsilon_1 .\;}
+\label{eq:resonance}
+\end{equation}
+This is a design equation, imposed by hand on the fabricated gaps
+[paper, above Eq.~(14)]. Its consequence: the two joint states
+\begin{equation}
+\ket{1}_v\ket{0}_{C_z}=\ket{1}_{C_0}\ket{0}_{C_1}\ket{0}_{C_z}
+=\ket{100},\qquad
+\ket{0}_v\ket{1}_{C_z}=\ket{0}_{C_0}\ket{1}_{C_1}\ket{1}_{C_z}
+=\ket{011},
+\end{equation}
+become \emph{degenerate}. Their bare energies are
+\begin{equation}
+E(\ket{100}) = \epsilon_0,\qquad
+E(\ket{011}) = \epsilon_1 + \epsilon_z
+\overset{\eqref{eq:resonance}}{=}\epsilon_0 .
+\end{equation}
+(Ordering of kets is $(C_0C_1C_z)$ throughout.)
+
+\subsection{Deriving the interaction from \texorpdfstring{$[H_{\mathrm{int}},H_0]=0$}{[Hint,H0]=0}}
+The energy--preserving requirement \eqref{eq:energy-preserving} says
+$H_{\mathrm{int}}$ may only connect degenerate eigenstates of $H_0$.
+Among all three--qubit basis states, the single resonant pair created by
+\eqref{eq:resonance} is $\{\ket{100},\ket{011}\}$. The most general
+Hermitian operator connecting \emph{only} this pair is
+\begin{equation}
+\boxed{\;
+H_{\mathrm{int}} = \chi\big(\ket{100}\bra{011}
++ \ket{011}\bra{100}\big),
+\;}
+\label{eq:Hint-kets}
+\end{equation}
+with a single real coupling $\chi$ (a phase on $\chi$ can be absorbed
+into the definition of the states). Written with Pauli operators, using
+$\ket{100}\bra{011}=\sigma_+^{(0)}\sigma_-^{(1)}\sigma_-^{(z)}$,
+\begin{equation}
+H_{\mathrm{int}} = \chi\Big(
+\sigma_+^{(0)}\sigma_-^{(1)}\sigma_-^{(z)}
++ \sigma_-^{(0)}\sigma_+^{(1)}\sigma_+^{(z)}\Big),
+\label{eq:Hint-pauli}
+\end{equation}
+or, in the mixed notation of [paper Eq.~(14)],
+\begin{equation}
+H_{\mathrm{int}} = \chi\,\ket{1}\bra{0}_{C_0}\otimes
+\ket{0}\bra{1}_{C_1}\otimes\ket{0}\bra{1}_{C_z} + \mathrm{h.c.}
+\label{eq:Hint-paper}
+\end{equation}
+Equations \eqref{eq:Hint-kets}--\eqref{eq:Hint-paper} are one and the
+same operator; \eqref{eq:Hint-paper} is verbatim the paper's. One checks
+directly that $[H_{\mathrm{int}},H_0]=0$ because it connects only
+degenerate states.
+
+\subsection{Why this term, and why not the others}
+Five questions, five answers.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item \textbf{Why does energy conservation force exactly this pair?}
+Because \eqref{eq:resonance} makes $\ket{100}$ and $\ket{011}$ the
+\emph{only} degenerate pair differing by a single allowed excitation
+rearrangement; any other off--diagonal term would connect states of
+different bare energy and violate \eqref{eq:energy-preserving}.
+\item \textbf{Why three--body and not pairwise?} The virtual qubit
+\eqref{eq:virtual-states} is a \emph{joint} property of $C_0$ and $C_1$.
+A two--body term $\sigma_+^{(0)}\sigma_-^{(1)}$ merely rotates the
+excitation between $C_0$ and $C_1$ (an internal rotation of the virtual
+qubit) and transfers nothing to $C_z$. To let $C_z$ ``read'' the virtual
+qubit you must flip all three spins at once --- an irreducibly
+three--body operator.
+\item \textbf{What does it do physically?} Rewrite
+\eqref{eq:Hint-kets} in virtual--qubit variables:
+\begin{equation}
+H_{\mathrm{int}} = \chi\big(\ket{1}_v\ket{0}_{C_z}
+\bra{0}_v\bra{1}_{C_z} + \mathrm{h.c.}\big),
+\label{eq:Hint-swap}
+\end{equation}
+[paper Eq.~(12)] --- a resonant \textsc{swap} (beam splitter) between the
+virtual qubit and $C_z$. \emph{This is the microscopic reason $C_z$
+thermalizes to $\beta_v$}: the interaction literally swaps the virtual
+qubit's population into $C_z$, so in steady state $C_z$ carries the
+virtual population, i.e.\ the virtual temperature.
+\item \textbf{Why drop the counter--rotating / non--resonant terms?}
+Operators like $\sigma_+^{(0)}\sigma_+^{(1)}\sigma_+^{(z)}$ create three
+excitations and oscillate at $\epsilon_0+\epsilon_1+\epsilon_z$ in the
+interaction picture; being far off resonance they average to zero on the
+relaxation time (the same RWA as (A3)/(A5)), with error $O(\chi/\epsilon)$.
+\item \textbf{Why is there no bare $C_0$--$C_1$ coupling or
+$\sigma_z\sigma_z$ term?} Such terms would hybridize the two input
+qubits and spoil the \emph{product} thermal structure
+$\tau_{C_0}\otimes\tau_{C_1}$ from which $\beta_v$ was \emph{defined} in
+\eqref{eq:betav-ratio}. They are deliberately absent. The three lines a
+schematic draws between $C_0,C_1,C_z$ represent the single three--body
+term \eqref{eq:Hint-kets}, not three independent couplings.
+\end{enumerate}
+
+\begin{remark}[a frequent coding error]
+The resonant pair is $\ket{100}\leftrightarrow\ket{011}$. A tempting but
+\emph{wrong} choice is $\ket{101}\leftrightarrow\ket{010}$, whose bare
+energies are $\epsilon_0+\epsilon_z$ and $\epsilon_1$; these differ by
+$\epsilon_0+\epsilon_z-\epsilon_1 = 2\epsilon_z\neq0$. That term is
+off--resonant and, at $\chi\ll\epsilon_z$, dynamically inert --- the
+collector would not work. Always build $H_{\mathrm{int}}$ from the
+degenerate pair fixed by \eqref{eq:resonance}.
+\end{remark}
+
+\begin{implbox}[the collector Hamiltonian]
+With QuTiP and ordering $(C_0C_1C_z)$:
+\begin{quote}\ttfamily
+n0,n1,nz = num on each site (tensor with identities)\\
+H0 = eps0*n0 + eps1*n1 + eps\_z*nz\\
+k100 = tensor(basis(2,1),basis(2,0),basis(2,0))\\
+k011 = tensor(basis(2,0),basis(2,1),basis(2,1))\\
+Hint = chi*(k100*k011.dag() + k011*k100.dag())\\
+H = H0 + Hint
+\end{quote}
+Verify $\|[H_0,H_{\mathrm{int}}]\|=0$ before trusting anything: it is the
+one--line check that the resonance \eqref{eq:resonance} was implemented
+correctly.
+\end{implbox}
+
+\subsection{Steady state of the swap: \texorpdfstring{$C_z\to\beta_v$}{Cz to betav}}
+With $C_z$ additionally reset--coupled (rate $\mu$) to a bath $B_z$ at
+$\beta_z$, the competition is between the swap
+\eqref{eq:Hint-swap}, which pulls $C_z$ toward $\beta_v$, and the bath,
+which pulls it toward $\beta_z$. Under the time--scale separation
+introduced next (Part III), the current the collector delivers to $B_z$
+is [paper Eq.~(17)]
+\begin{equation}
+\boxed{\; j_{\calC} = \mu\,\epsilon_z\big[\gz(\beta_z) - \gz(\beta_v)\big],
+\qquad \gz(x):=g(x\,\epsilon_z). \;}
+\label{eq:jC}
+\end{equation}
+When $\beta_v>\beta_z$ the collector cools $B_z$ (refrigerator); when
+$\beta_v<\beta_z$ it heats it (heat pump). Setting $j_{\calC}=0$ in
+isolation gives $\beta_z=\beta_v$: \emph{the collector alone drives the
+output reservoir to the virtual temperature}. That linearity
+(cf.\ \eqref{eq:betav}) is precisely why the collector by itself is only
+an inverting \emph{linear amplifier} --- the motivation for the
+modulator, taken up in Part III.
+
+\begin{keybox}
+\textbf{End of Part II.} The collector's Hamiltonian is
+$H_{\calC}=H_0+H_{\mathrm{int}}$ with
+$H_0=\epsilon_0 n_0+\epsilon_1 n_1+\epsilon_z n_z$ and the resonant
+three--body swap \eqref{eq:Hint-kets}. It thermalizes $C_z$ (and hence
+$B_z$) to the virtual temperature $\beta_v$ of \eqref{eq:betav}, a
+weighted sum of the inputs --- the perceptron pre--activation. Part III
+adds the modulator to make the response nonlinear and reads out the bit.
+\end{keybox}
+
+% #####################################################################
+\part{The NOT gate: collector, modulator, dynamics, logic}
+\label{part:notgate}
+% #####################################################################
+
+\section{The collector alone is a linear amplifier}
+\label{sec:collector-linear}
+Assemble the collector: three qubits $C_0,C_1,C_z$ with the free
+Hamiltonian $H_0=\epsilon_0 n_0+\epsilon_1 n_1+\epsilon_z n_z$, the
+resonant three--body interaction \eqref{eq:Hint-kets}, and three local
+reset dissipators (rates $\gamma$ for $C_0,C_1$; $\mu$ for $C_z$). Its
+master equation is [paper Eq.~(13)]
+\begin{equation}
+\dot\rho_{\calC} = -\ii[H_0+H_{\mathrm{int}},\rho_{\calC}]
++ \calL^{(0)}[\rho_{\calC}] + \calL^{(1)}[\rho_{\calC}]
++ \calL^{(z)}[\rho_{\calC}].
+\label{eq:collector-me}
+\end{equation}
+As shown in Sec.~\ref{sec:interaction}, the swap thermalizes $C_z$ toward
+the virtual temperature $\beta_v$, delivering to $B_z$ the current
+\eqref{eq:jC}, $j_{\calC}=\mu\epsilon_z[\gz(\beta_z)-\gz(\beta_v)]$. In
+isolation the fixed point $j_{\calC}=0$ is $\beta_z=\beta_v$, and by
+\eqref{eq:betav} this is an \emph{affine} (linear) function of the input:
+\begin{equation}
+\beta_z^{\text{collector only}} = \beta_v
+= \frac{\epsilon_0}{\epsilon_z}\,\beta_0
+- \frac{\epsilon_1}{\epsilon_z}\,\beta_1 .
+\label{eq:linear-response}
+\end{equation}
+The output inverse temperature is a straight line in $\beta_1$ with
+negative slope: an \emph{inverting linear amplifier}.
+
+\section{Why we need the modulator}
+\label{sec:why-modulator}
+Here is the answer to the question ``why do we even need the
+modulator?''. A linear amplifier is a \emph{bad} logic gate for one
+concrete reason: it does not restore levels. Suppose the input carries a
+small fluctuation $\beta_1\to\beta_1+\delta$. By
+\eqref{eq:linear-response} the output moves by
+$-(\epsilon_1/\epsilon_z)\,\delta$; with $\epsilon_1/\epsilon_z$ made
+large (needed for a steep, decisive gate) the \emph{noise is amplified}
+along with the signal. Cascading such gates amplifies noise without
+bound, causing bit flips. A good gate must instead \emph{saturate}: for
+inputs safely inside a logical region the output should barely move
+(flat response, noise rejected), while it should swing sharply when the
+input crosses the decision boundary. That is precisely a
+\emph{sigmoidal}, not linear, transfer curve.
+
+\begin{keybox}
+\textbf{The role of the modulator (one sentence).} The collector
+supplies the perceptron's \emph{weighted sum} $\beta_v$
+\eqref{eq:betav}; the modulator supplies the perceptron's \emph{nonlinear
+activation} by confining the output to a fixed logical window
+$[\beta_{\mathrm{hot}},\beta_{\mathrm{cold}}]$ and thereby saturating the
+response. Without it the ``activation function'' is the identity
+$f(y)=y$, which is known to make a useless classifier.
+\end{keybox}
+
+\section{The modulator: one qubit, two baths}
+\label{sec:modulator}
+The modulator $\calM$ is a \emph{single} qubit $C_\calM$ with gap chosen
+resonant with the output channel,
+\begin{equation}
+H_\calM = \epsilon_\calM\, n_\calM ,\qquad \epsilon_\calM = \epsilon_z ,
+\end{equation}
+placed in simultaneous contact with \emph{two} baths: a reference bath
+$B_r$ at fixed $\beta_r$ (rate $\gamma$) and the output bath $B_z$ (rate
+$\mu'$). Its state obeys [paper Eq.~(18)]
+\begin{equation}
+\dot\rho_\calM = \calL^{(r)}[\rho_\calM] + \calL^{(z)}[\rho_\calM]
+= \gamma\big(\tau(\beta_r)-\rho_\calM\big)
++ \mu'\big(\tau(\beta_z)-\rho_\calM\big).
+\label{eq:mod-me}
+\end{equation}
+Both dissipators are diagonal, so it suffices to track the excited
+population $p_\calM:=\bra{1}\rho_\calM\ket{1}$:
+\begin{equation}
+\dot p_\calM = \gamma\big[\gz(\beta_r)-p_\calM\big]
++ \mu'\big[\gz(\beta_z)-p_\calM\big].
+\label{eq:mod-pop}
+\end{equation}
+Setting $\dot p_\calM=0$,
+\begin{equation}
+p_\calM^{\mathrm{ss}}
+= \frac{\gamma\,\gz(\beta_r)+\mu'\,\gz(\beta_z)}{\gamma+\mu'}
+\;\xrightarrow{\ \mu'\ll\gamma\ }\; \gz(\beta_r).
+\label{eq:mod-ss}
+\end{equation}
+
+\begin{approxbox}[(A7) modulator pinned to the reference, \eqref{eq:mod-ss}]
+\textbf{Where:} we set $\mu'\ll\gamma$, so $p_\calM^{\mathrm{ss}}\approx
+\gz(\beta_r)$. \textbf{Why:} the strong reference coupling holds the
+modulator qubit at $\beta_r$, essentially unperturbed by the (weak)
+output coupling. \textbf{When:} $\mu'/\gamma\to0$; corrections are
+$O(\mu'/\gamma)$. This is what makes the modulator a stiff ``anchor''
+whose only slow action is to bleed a controlled current into $B_z$.
+\end{approxbox}
+
+The steady--state heat current the modulator delivers to $B_z$ is
+\eqref{eq:current-reset} with $p_\calM=\gz(\beta_r)$, [paper Eq.~(19)]
+\begin{equation}
+\boxed{\; j_\calM = \mu'\,\epsilon_z\big[\gz(\beta_z)-\gz(\beta_r)\big]. \;}
+\label{eq:jM}
+\end{equation}
+The modulator therefore continuously pulls $\beta_z$ toward $\beta_r$
+with strength $\mu'$: a single--qubit \emph{heat valve} that competes
+with the collector current \eqref{eq:jC}.
+
+\section{Dynamics of the full machine: two time scales}
+\label{sec:dynamics}
+The output reservoir $B_z$ has finite heat capacity $\calC$, so its
+temperature $T_z=1/\beta_z$ moves under the total incoming current
+$j_{\calC}+j_\calM$ (calorimetric law $\calC\dot T_z=j_{\calC}+j_\calM$).
+In terms of $\beta_z=1/T_z$ (units $\kB=1$),
+\begin{equation}
+\boxed{\;
+\dot\beta_z = -\frac{\beta_z^2}{\calC}\big(j_{\calC}+j_\calM\big).
+\;}
+\label{eq:calorimetric}
+\end{equation}
+This is [paper Eq.~(20)]. The consistency of inserting the
+\emph{steady--state} currents \eqref{eq:jC}, \eqref{eq:jM} into
+\eqref{eq:calorimetric} rests on a separation of time scales built into
+the design,
+\begin{equation}
+\gamma \;\gg\; \mu,\mu' .
+\label{eq:timescales}
+\end{equation}
+
+\begin{approxbox}[(A8) adiabatic elimination / time--scale separation, \eqref{eq:timescales}]
+\textbf{Where:} we use the \emph{steady--state} $C_z\to\beta_v$ and
+$C_\calM\to\beta_r$ inside the slow equation \eqref{eq:calorimetric}.
+\textbf{Why:} with $\gamma\gg\mu,\mu'$ the internal qubits relax fast
+compared with the drift of $\beta_z(t)$, so at each instant they are
+slaved to the current value of $\beta_z$. \textbf{When:} $\mu,\mu'\ll
+\gamma$; the error is $O(\mu/\gamma)$. This is the autonomous analogue of
+the quasi--static assumption in circuit analysis, and it is what lets us
+treat $\beta_z(t)$ as the single slow logical variable.
+\end{approxbox}
+
+\section{Steady state and the transfer characteristic}
+\label{sec:transfer}
+The output settles when $\dot\beta_z=0$, i.e.\ $j_{\calC}+j_\calM=0$.
+Substituting \eqref{eq:jC} and \eqref{eq:jM},
+\begin{equation}
+\mu\big[\gz(\beta_z)-\gz(\beta_v)\big]
++ \mu'\big[\gz(\beta_z)-\gz(\beta_r)\big]=0,
+\end{equation}
+so, with the branching ratio $\Delta:=\mu/(\mu+\mu')$,
+\begin{equation}
+\boxed{\;
+\gz(\beta_z^\infty) = \Delta\,\gz(\beta_v)+(1-\Delta)\,\gz(\beta_r).
+\;}
+\label{eq:ss-condition}
+\end{equation}
+This is [paper Eq.~(21)]. The output excitation is a convex combination
+of the collector's target ($\beta_v$) and the modulator's anchor
+($\beta_r$), weighted purely by coupling rates.
+
+\subsection{Fixing the modulator: confinement to the logical window}
+For $\beta_z^\infty$ to be a valid logical signal we demand it stay in a
+window $[\beta_{\mathrm{hot}},\beta_{\mathrm{cold}}]$
+($\beta_{\mathrm{cold}}>\beta_{\mathrm{hot}}$) even when the virtual
+temperature saturates. Since $\gz$ is monotonically decreasing,
+$\gz(\beta_v)\to0$ as $\beta_v\to+\infty$ and $\gz(\beta_v)\to1$ as
+$\beta_v\to-\infty$. Impose the two rail conditions on
+\eqref{eq:ss-condition}:
+\begin{align}
+\beta_v\to+\infty:&\quad (1-\Delta)\gz(\beta_r)
+\overset{!}{=}\gz(\beta_{\mathrm{cold}}),
+\label{eq:rail1}\\
+\beta_v\to-\infty:&\quad \Delta+(1-\Delta)\gz(\beta_r)
+\overset{!}{=}\gz(\beta_{\mathrm{hot}}).
+\label{eq:rail2}
+\end{align}
+Subtracting \eqref{eq:rail1} from \eqref{eq:rail2} gives the two design
+equations that fix the modulator's free parameters:
+\begin{equation}
+\boxed{\;
+\Delta = \gz(\beta_{\mathrm{hot}})-\gz(\beta_{\mathrm{cold}}),
+\qquad
+\gz(\beta_r)=\frac{\gz(\beta_{\mathrm{cold}})}{1-\Delta}. \;}
+\label{eq:mod-design}
+\end{equation}
+These pin $(\mu'/\mu,\beta_r)$ from the chosen logical window. This is the
+main--text version of [paper Supplementary Material A]; the sign
+conventions there ($\beta_{\min},\beta_{\max},\kappa$) are identical
+after relabelling.
+
+\subsection{The transfer function}
+Substituting \eqref{eq:mod-design} back into \eqref{eq:ss-condition},
+$(1-\Delta)\gz(\beta_r)=\gz(\beta_{\mathrm{cold}})$ and
+$\Delta=\gz(\beta_{\mathrm{hot}})-\gz(\beta_{\mathrm{cold}})$, so
+\begin{align}
+\gz(\beta_z^\infty)
+&= \gz(\beta_{\mathrm{hot}})\gz(\beta_v)
++ \gz(\beta_{\mathrm{cold}})\big(1-\gz(\beta_v)\big) =: Q(\beta_v).
+\label{eq:Qdef}
+\end{align}
+Inverting $\gz(\beta)=(1+\ee^{\beta\epsilon_z})^{-1}$
+(so $\beta=\epsilon_z^{-1}\ln[\gz^{-1}-1]$) yields the exact transfer
+characteristic [paper Eq.~(22)]
+\begin{equation}
+\boxed{\;
+\beta_z^\infty = \frac{1}{\epsilon_z}\,
+\ln\!\big[Q(\beta_v)^{-1}-1\big],
+\quad
+Q(\beta_v)=\gz(\beta_{\mathrm{hot}})\gz(\beta_v)
++\gz(\beta_{\mathrm{cold}})\big(1-\gz(\beta_v)\big). \;}
+\label{eq:transfer}
+\end{equation}
+
+\begin{implbox}[transfer curve]
+Compute \texttt{beta\_v} from \eqref{eq:betav}, then \texttt{gz(x)=1/(1+exp(x*eps\_z))},
+\texttt{Q = gz(bhot)*gz(bv)+gz(bcold)*(1-gz(bv))}, and
+\texttt{bz\_inf = log(1/Q - 1)/eps\_z}. Sweeping $\beta_1$ reproduces
+[paper Fig.~3B]. As a cross--check, integrate \eqref{eq:calorimetric}
+with a stiff ODE solver and confirm the fixed point matches
+\eqref{eq:transfer}.
+\end{implbox}
+
+\section{Emergence of the sigmoid}
+\label{sec:sigmoid}
+The link to the perceptron activation is now exact. First note the
+identity, from $\beta_v\epsilon_z=\beta_0\epsilon_0-\beta_1\epsilon_1$
+(multiply \eqref{eq:betav} by $\epsilon_z=\epsilon_0-\epsilon_1$),
+\begin{equation}
+\gz(\beta_v)=\frac{1}{1+\ee^{\beta_v\epsilon_z}}
+= f\big(\beta_0\epsilon_0-\beta_1\epsilon_1\big),\qquad
+f(x):=\frac{1}{1+\ee^{x}},
+\label{eq:exact-sigmoid}
+\end{equation}
+with \emph{no approximation}: the collector's virtual population is
+already a sigmoid of the perceptron pre--activation
+$x=\beta_0\epsilon_0-\beta_1\epsilon_1$. The modulator's job is only to
+map it affinely onto the temperature axis. Expanding \eqref{eq:transfer}
+for small $\epsilon_z$ using
+$\gz(\beta)=\tfrac12-\tfrac{\beta\epsilon_z}{4}+O(\epsilon_z^3)$:
+\begin{equation}
+Q(\beta_v)=\tfrac12-\frac{\epsilon_z}{4}\,B+O(\epsilon_z^2),\quad
+B:=\beta_{\mathrm{hot}}\gz(\beta_v)
++\beta_{\mathrm{cold}}\big(1-\gz(\beta_v)\big),
+\end{equation}
+so that $\frac{1-Q}{Q}=1+\epsilon_z B+O(\epsilon_z^2)$ and
+\begin{equation}
+\beta_z^\infty=\frac1{\epsilon_z}\ln\frac{1-Q}{Q}
+= B+O(\epsilon_z)
+= \beta_{\mathrm{cold}}
++(\beta_{\mathrm{hot}}-\beta_{\mathrm{cold}})\,\gz(\beta_v)+O(\epsilon_z).
+\label{eq:activation}
+\end{equation}
+Combining \eqref{eq:exact-sigmoid} and \eqref{eq:activation},
+\begin{equation}
+\boxed{\;
+\beta_z^\infty \simeq \beta_{\mathrm{cold}}
++(\beta_{\mathrm{hot}}-\beta_{\mathrm{cold}})\,
+f\big(\beta_0\epsilon_0-\beta_1\epsilon_1\big),
+\;}
+\label{eq:sigmoid-final}
+\end{equation}
+which is [paper Eq.~(23)]: a sigmoidal interpolation between the two
+logical rails whose argument is exactly the perceptron pre--activation.
+As $\epsilon_1\to\infty$ the sigmoid sharpens into the ideal inverted
+step (perfect NOT), at the cost of dissipation (Sec.~\ref{sec:tradeoff}).
+
+\begin{approxbox}[(A9) small--$\epsilon_z$ (sigmoid) expansion, \eqref{eq:activation}]
+\textbf{Where:} we expand $\gz$ and the logarithm to first order in
+$\epsilon_z$. \textbf{Why:} for $\epsilon_z\ll\epsilon_1$ the output gap
+is the smallest scale and the transfer curve is dominated by its linear
+term, which is a clean sigmoid. \textbf{When:} $\epsilon_z\ll
+1/\beta_{\mathrm{hot,cold}},\epsilon_1$. For larger $\epsilon_z$ the
+curve still inverts but the parameter roles ($\beta_0$ as threshold,
+$\epsilon_0$ as steepness) blur.
+\end{approxbox}
+
+\subsection{Threshold and gain}
+Differentiating \eqref{eq:sigmoid-final} with $f'(x)=-f(x)(1-f(x))$ and
+$x=\beta_0\epsilon_0-\beta_1\epsilon_1$ (so $\dd x/\dd\beta_1=-\epsilon_1$),
+\begin{equation}
+\mathcal{A}(\beta_1):=\dv{\beta_z^\infty}{\beta_1}
+= -\,\Delta\beta\,\epsilon_1\,f(x)\big(1-f(x)\big),\qquad
+\Delta\beta:=\beta_{\mathrm{cold}}-\beta_{\mathrm{hot}}.
+\end{equation}
+The switching threshold is where $x=0$, i.e.\
+$\beta_1^\ast=\beta_0\epsilon_0/\epsilon_1
+=\beta_0(1+\epsilon_z/\epsilon_1)\approx\beta_0$; there $f(1-f)=1/4$ and
+\begin{equation}
+\mathcal{A}_{\max}=-\frac{\epsilon_1\,\Delta\beta}{4},
+\label{eq:gain}
+\end{equation}
+recovering [paper Supp.~A, Eq.~(A10)] (for $\beta_{\mathrm{hot}}=0,
+\beta_{\mathrm{cold}}=1$, $\mathcal{A}=-\epsilon_0/4+O(\epsilon_z^2)$
+with $\epsilon_0\approx\epsilon_1$). \textbf{This makes the trade--off
+visible already:} steeper gate $\Rightarrow$ larger $\epsilon_1$
+$\Rightarrow$ (Sec.~\ref{sec:tradeoff}) more dissipation. The qubit gap
+$\epsilon_1$ is the ``transconductance'' of the device.
+
+\section{Logic encoding and readout error}
+\label{sec:logic}
+\subsection{Encoding and decoding}
+Logical values are placed on, and read from, temperatures via [paper
+Eq.~(24)]
+\begin{equation}
+x=\begin{cases}0,&\beta_1=\beta_{\mathrm{hot}}\\
+1,&\beta_1=\beta_{\mathrm{cold}}\end{cases}
+\qquad
+y=\begin{cases}
+0,&\beta_z^\infty\le(1+\delta)\beta_{\mathrm{hot}}\\
+1,&\beta_z^\infty\ge(1-\delta)\beta_{\mathrm{cold}}\\
+\varnothing,&\text{otherwise,}\end{cases}
+\label{eq:encoding}
+\end{equation}
+where $\delta$ is a tolerance (guard band) and $\varnothing$ is an
+invalid readout. Inversion follows from the sign structure of $\beta_v$:
+a hot input ($\beta_1=\beta_{\mathrm{hot}}<\beta_0$) makes the collector
+a refrigerator, $\gz(\beta_v)\to0$, so
+$\beta_z^\infty\to\beta_{\mathrm{cold}}$ ($y=1$); a cold input makes it a
+heat pump, $\gz(\beta_v)\to1$, $\beta_z^\infty\to\beta_{\mathrm{hot}}$
+($y=0$). That is the NOT gate.
+
+\subsection{The Gaussian readout--error model}
+Because the machine is stochastic, the finite bath fluctuates around
+$\beta_z^\infty$. Model the actual response as Gaussian [paper
+Eqs.~(25)--(26)],
+\begin{equation}
+T(\beta_z\mid\beta_1)\propto \mathcal N\big(\beta_z^\infty,\;C\big),
+\end{equation}
+justified by the central limit theorem for the many--particle reservoir
+(larger heat capacity $C$ $\Rightarrow$ wider fluctuations). With input
+distribution $p(x)$, encoding $e(\beta_1\mid x)$ and decoding
+$d(y\mid\beta_z)$ from \eqref{eq:encoding}, the channel is
+\begin{equation}
+p(y\mid x)=\int d(y\mid\beta_z)\,T(\beta_z\mid\beta_1)\,
+e(\beta_1\mid x)\,\dd\beta_1\,\dd\beta_z,
+\end{equation}
+and the average error is [paper Eq.~(27)]
+\begin{equation}
+\langle\xi\rangle=\sum_{x\in\{0,1\}}\sum_{y\in\{0,1\}}
+p(x)\,p(y\mid x)\,\delta_{xy}
+\quad(\text{probability output}\neq\text{desired}).
+\label{eq:error}
+\end{equation}
+The sharper the transfer curve (larger $\epsilon_1$), the smaller
+$\langle\xi\rangle$ --- the gate quality improves with energy invested.
+
+\section{The error--dissipation trade--off}
+\label{sec:tradeoff}
+The dissipation is the entropy production \eqref{eq:entropy-prod}
+integrated over the run. In the slow regime the machine's own entropy is
+constant, so the total rate splits into collector and modulator pieces,
+\begin{equation}
+\dot\Sigma=\dot\Sigma_{\calC}+\dot\Sigma_\calM,\quad
+\dot\Sigma_{\calC}=-\beta_0 j_0-\beta_1 j_1-\beta_z j_{\calC},\quad
+\dot\Sigma_\calM=-\beta_z j_\calM-\beta_r j_r,
+\end{equation}
+with $j_{0,1,r}$ the currents from $B_{0,1,r}$ into their qubits.
+Integrating over the run time $\tau$ and averaging over inputs [paper
+Eqs.~(28)--(29)],
+\begin{equation}
+\langle\Sigma\rangle=\sum_{x\in\{0,1\}}\int p(x)\,e(\beta_1\mid x)\,
+\Sigma(\beta_1)\,\dd\beta_1,\qquad
+\Sigma(\beta_1)=\int_0^\tau\dot\Sigma(\beta_1)\,\dd t.
+\label{eq:diss}
+\end{equation}
+
+\begin{keybox}
+\textbf{The central trade--off} [paper Fig.~3C]. Lowering the average
+error $\langle\xi\rangle$ requires increasing the gain, i.e.\ raising
+$\epsilon_1$ (Eq.~\eqref{eq:gain}); but the heat currents --- and hence
+$\langle\Sigma\rangle$ --- grow with the qubit energies. Thus
+$\langle\xi\rangle$ and $\langle\Sigma\rangle$ are monotonically
+opposed: \emph{accuracy costs dissipation}. This is the thermodynamic
+price of computation for the neuron, and the baseline that the
+Floquet--buffer extension seeks to improve.
+\end{keybox}
+
+\begin{keybox}
+\textbf{End of Part III.} Full machine Hamiltonian:
+$H=H_0+H_{\mathrm{int}}+H_\calM$ (collector free $+$ resonant swap $+$
+modulator), plus four local reset baths. The collector builds the
+weighted sum $\beta_v$; the modulator saturates it into the sigmoid
+\eqref{eq:sigmoid-final}; encoding \eqref{eq:encoding} reads the bit; and
+accuracy trades against dissipation. Part IV lifts this to $n$ inputs and
+proves the perceptron equivalence.
+\end{keybox}
+
+% #####################################################################
+\part{The general neuron: perceptron equivalence and networks}
+\label{part:general}
+% #####################################################################
+
+\section{The $n$--input collector}
+\label{sec:n-collector}
+Everything generalizes. The collector now has $n+2$ qubits: a reference
+$C_0$ (bath $B_0$, fixed $\beta_0$), inputs $C_1,\dots,C_n$ (baths
+$B_1,\dots,B_n$ at $\beta_1,\dots,\beta_n$ encoding the $n$ input bits),
+and the output $C_z$ (finite reservoir $B_z$). The modulator is
+\emph{exactly the same} single qubit as before. The only new ingredient
+is that a multi--qubit machine hosts \emph{many} virtual qubits, and we
+must say which one we use.
+
+\subsection{Choosing a virtual qubit: the vector $h$}
+Introduce a binary vector $h=(h_0,h_1,\dots,h_n)$, $h_i\in\{0,1\}$,
+recording whether qubit $i$ contributes its ground ($h_i=0$) or excited
+($h_i=1$) state. The chosen virtual qubit has levels [paper
+Eqs.~(30)--(31)]
+\begin{align}
+\ket{0}_v &:= \ket{h_0}_{C_0}\ket{h_1}_{C_1}\cdots\ket{h_n}_{C_n},\\
+\ket{1}_v &:= \ket{h_0\!\oplus\!1}_{C_0}\ket{h_1\!\oplus\!1}_{C_1}
+\cdots\ket{h_n\!\oplus\!1}_{C_n},
+\end{align}
+where $\oplus$ is addition mod $2$: $\ket{1}_v$ is the bit--flip of
+$\ket{0}_v$ on \emph{every} qubit. Its energy gap is [paper Eq.~(32)]
+\begin{equation}
+\epsilon_v = \sum_{i=0}^{n}(-1)^{h_i\oplus1}\epsilon_i .
+\label{eq:eps-v-gen}
+\end{equation}
+
+\subsection{The interaction and the multi--input virtual temperature}
+As before, choose $C_z$ resonant with this virtual qubit,
+$\epsilon_z=\epsilon_v$, and couple them by the swap [paper, after
+Eq.~(32)]
+\begin{equation}
+H_{\mathrm{int}} = g\big(\ket{0}\bra{1}_v\otimes\ket{1}\bra{0}_{C_z}
++ \mathrm{h.c.}\big),
+\label{eq:Hint-gen}
+\end{equation}
+which is the direct generalization of \eqref{eq:Hint-swap}. The
+excited--state population of the virtual qubit is the product of the
+per--qubit occupations [paper Eq.~(33)]
+\begin{equation}
+g_v = g_0(h_0)\,g_1(h_1)\cdots g_n(h_n),\qquad
+g_i(0)=(1+\ee^{-\beta_i\epsilon_i})^{-1},\ g_i(1)=1-g_i(0),
+\end{equation}
+and $\ee^{-\beta_v\epsilon_v}=g_v/(1-g_v)$ gives, after taking the log of
+the product [paper Eq.~(34)],
+\begin{equation}
+\boxed{\;
+\beta_v = \frac{1}{\epsilon_z}\sum_{i=0}^{n}(-1)^{h_i}\beta_i\epsilon_i .
+\;}
+\label{eq:betav-gen}
+\end{equation}
+Again a \emph{linear combination of the input inverse temperatures}, with
+weights $(-1)^{h_i}\epsilon_i/\epsilon_z$ set by the gaps and the vector
+$h$. The steady--state output is the same nonlinear map as in Part III,
+[paper Eqs.~(35)--(36)]
+\begin{equation}
+\beta_z^\infty=\frac{1}{\epsilon_z}\ln\!\big[Q(\beta_v)^{-1}-1\big]
+= f(\beta_v)+O(\epsilon_z),
+\end{equation}
+with $Q$ from \eqref{eq:transfer}. The whole machine still computes
+``weighted sum, then sigmoid.''
+
+\section{Exact correspondence with the perceptron}
+\label{sec:perceptron}
+A perceptron with inputs $x=(x_0,\dots,x_n)$ (with $x_0=1$ by convention)
+and weights $w=(w_0,\dots,w_n)$ outputs [paper Eq.~(37)]
+\begin{equation}
+z=f(y),\qquad y=\sum_{i=0}^{n}w_i x_i .
+\end{equation}
+The two--step structure matches the neuron line for line:
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Perceptron & Thermodynamic neuron \\
+\midrule
+inputs $x_i$ & input inverse temperatures $\beta_i$ \\
+weighted sum $y=\sum_i w_i x_i$ & virtual temperature $\beta_v$,
+Eq.~\eqref{eq:betav-gen} \\
+bias $w_0$ & reference term $(-1)^{h_0}\beta_0\epsilon_0/\epsilon_z$ \\
+weights $w_i$ & $(-1)^{h_i}\epsilon_i/\epsilon_z$ \\
+activation $f$ (sigmoid) & modulator map, small--$\epsilon_z$
+Eq.~\eqref{eq:sigmoid-final} \\
+output $z$ & output temperature $\beta_z^\infty$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Concretely, with an overall energy scale $\alpha$ (defined below), the
+pre--activation is [paper Eq.~(44)]
+\begin{equation}
+\beta_z^\infty=f(x)+O(\epsilon_z),\qquad
+x=\alpha\Big(w_0+\sum_{i=1}^{n}w_i\beta_i\Big),
+\label{eq:perceptron-out}
+\end{equation}
+\emph{exactly} the sigmoid perceptron. Hence a single thermodynamic
+neuron implements precisely the linearly--separable functions, and (by
+choosing other thermalization models) a strict superset.
+
+\section{Designing a neuron: the algorithm}
+\label{sec:algorithm}
+Because the neuron \emph{is} a perceptron, we design it by training a
+perceptron and reading off the hardware. Given a target $n$--input
+Boolean function $R(x)$ [paper, Algorithm 1]:
+\begin{enumerate}[leftmargin=*]
+\item Build the training set $D=\{(x^{(i)},R(x^{(i)}))\}_{i=1}^{2^n}$.
+\item Train a linear classifier (sigmoid perceptron) to obtain weights
+$w=(w_0,\dots,w_n)$.
+\item Set the interaction vector from the signs of the weights,
+$h_k = 0$ if $w_k\ge0$, else $h_k=1$ [paper Eq.~(39)].
+\item Set the qubit energies [paper Eq.~(40)]
+\begin{equation}
+\epsilon_k=\begin{cases}
+\alpha\,\big|\epsilon_z-\sum_{k=1}^n w_k\big| & k=0,\\[2pt]
+\alpha\,|w_k| & \text{otherwise.}
+\end{cases}
+\end{equation}
+\item Set the reference (bias) temperature [paper Eq.~(41)]
+\begin{equation}
+\beta_0=\frac{|w_0|}{\big|\epsilon_z-\sum_{k=1}^n w_k\big|}.
+\end{equation}
+\end{enumerate}
+Substituting into \eqref{eq:betav-gen} reproduces
+$\beta_v=\tfrac{\alpha}{\epsilon_z}\big(w_0+\sum_k w_k\beta_k\big)$
+[paper Eqs.~(42)--(43)], i.e.\ the trained hyperplane. The scale
+$\alpha>0$ is the ``quality knob'': it rescales all gaps, sharpening the
+threshold (better classification) at the price of proportionally more
+dissipation --- the same accuracy/dissipation trade--off of
+Sec.~\ref{sec:tradeoff}, now global. For the NOT gate one finds
+$\alpha=\epsilon_1$.
+
+\begin{implbox}[design + simulate a neuron]
+Train any logistic/perceptron classifier on the truth table (e.g.\
+\texttt{sklearn}); take \texttt{w}; map to \texttt{h, eps\_k, beta0} by
+the boxed formulas; build $H_0+H_{\mathrm{int}}$ (with the generalized
+swap \eqref{eq:Hint-gen}) plus reset baths in QuTiP; integrate the
+two--tier dynamics of Sec.~\ref{sec:dynamics}; read $\beta_z^\infty$ and
+decode with \eqref{eq:encoding}. Sweeping the inputs reproduces the
+response surfaces of [paper Figs.~6--7].
+\end{implbox}
+
+\section{Worked examples}
+\label{sec:examples}
+\begin{example}[NOR, $n=2$, paper Eqs.~(45)--(46)]
+The separating hyperplane $x_1+x_2=\tfrac12$ gives weights
+$w=(1,-2,-2)$. Then
+\begin{equation}
+h=(0,1,1),\qquad \epsilon=\alpha(\epsilon_z+4,\,2,\,2),\qquad
+\beta_0=(\epsilon_z+4)^{-1},
+\end{equation}
+and the virtual temperature becomes
+$\beta_v=\alpha(1-2\beta_1-2\beta_2)$. The response
+$\beta_z^\infty(\beta_1,\beta_2)$ matches the NOR truth table. Because
+NOR is functionally complete, networks of these neurons are universal.
+\end{example}
+
+\begin{example}[3--MAJORITY, $n=3$, paper Eqs.~(47)--(48)]
+Training gives $w=(-4,3,3,3)$, hence
+\begin{equation}
+h=(1,0,0,0),\qquad \epsilon=\alpha(\epsilon_z+12,\,3,\,3,\,3),\qquad
+\beta_0=(\epsilon_z+12)^{-1},
+\end{equation}
+and $\beta_v=\alpha(4-3\beta_1-3\beta_2-3\beta_3)$. The response
+reproduces the majority function.
+\end{example}
+
+\section{Networks: beyond linear separability (XOR)}
+\label{sec:networks}
+A single neuron can only realize linearly--separable functions (the
+perceptron limitation). XOR is not separable, so it needs a
+\emph{network}: write $\text{XOR}=\text{AND}(\text{NAND},\text{OR})$ and
+wire three neurons accordingly [paper, Fig.~8].
+
+\paragraph{The wiring problem and its fix.}
+Feeding one neuron's \emph{finite} output bath $B_z$ into the next
+neuron's input would let unwanted (possibly back--flowing) currents
+corrupt the operation, and Eq.~\eqref{eq:transfer} would no longer hold.
+Two remedies:
+\begin{itemize}[leftmargin=*]
+\item \emph{Measurement gateway:} an external agent reads $\beta_z$ of
+the first neuron and couples the second neuron's input qubit to an
+\emph{infinite} bath at $\beta_{\mathrm{hot}}$ or $\beta_{\mathrm{cold}}$
+accordingly. Simple, but sacrifices autonomy.
+\item \emph{Clock gateway} [paper, Supp.~C]: a stopwatch alternately
+opens/closes the coupling between $B_z$ and the next input qubit. Define
+$t_{\mathrm{steady}}$ (time for neuron~1 to reach $\beta_z^\infty$ with
+the link \emph{off}) and $t_{\mathrm{const}}$ (interval over which $B_z$
+stays effectively constant when used as neuron~2's input). Turning the
+link on for $t_{\mathrm{const}}$ after each $t_{\mathrm{steady}}$ makes
+$B_z$ behave as an infinite bath to neuron~2, with no spurious
+back--currents. Realized with an autonomous thermal clock, the network
+stays fully autonomous.
+\end{itemize}
+This clock--gated readout is exactly the mechanism the Floquet--buffer
+extension internalizes: the $J_0$--zero gating of the output buffer plays
+the role of $t_{\mathrm{const}}/t_{\mathrm{steady}}$, replacing the
+external stopwatch by the drive itself.
+
+\begin{keybox}
+\textbf{End of Part IV.} The $n$--input neuron computes
+$\beta_z^\infty\approx f\!\big(\alpha(w_0+\sum_i w_i\beta_i)\big)$, a
+sigmoid perceptron; its hardware ($h,\epsilon_k,\beta_0$) is read off a
+trained classifier; networks (clock--gated) reach any Boolean function.
+This is the complete autonomous baseline; the Floquet buffer aims to
+improve its accuracy/dissipation frontier and to make composition
+native.
+\end{keybox}
+
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+
+\section{Notation and symbol table}
+\label{app:notation}
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Symbol & Meaning & First appears \\
+\midrule
+$\epsilon_i$ & energy gap of qubit $C_i$ & \eqref{eq:H-single} \\
+$\beta_i$ & inverse temperature of bath $B_i$ & \eqref{eq:gibbs} \\
+$g(\beta\epsilon)$ & Fermi--Dirac / sigmoid occupation & \eqref{eq:fermi} \\
+$\tau(\beta)$ & Gibbs state & \eqref{eq:gibbs} \\
+$\calL^{(k)}$ & reset dissipator for bath $k$ & \eqref{eq:reset} \\
+$\gamma_k,\mu,\mu'$ & thermalization rates & \eqref{eq:reset}, \eqref{eq:jC} \\
+$\beta_v,\epsilon_v$ & virtual temperature and gap & \eqref{eq:eps-v}--\eqref{eq:betav} \\
+$\chi$ & collector coupling strength & \eqref{eq:Hint-kets} \\
+$j_k$ & heat current into bath $k$ & \eqref{eq:current-def} \\
+$\dot\Sigma$ & entropy production rate & \eqref{eq:entropy-prod} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{List of approximations}
+\label{app:approx}
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Tag & Name & Regime of validity \\
+\midrule
+(A1) & Born / weak coupling & $\gamma\ll\epsilon$, factorized state \\
+(A2) & Markov / short memory & bath correlation time $\tau_c\ll1/\gamma$ \\
+(A3) & secular / RWA & $\gamma\ll\epsilon$ (resolved gap) \\
+(A4) & reset thermalization & steady--state populations only \\
+(A5) & energy--preserving $H_{\mathrm{int}}$ & $\chi\ll\epsilon$ \\
+(A6) & local master equation & $\chi\ll\epsilon$ (else global) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Full Born--Markov--secular derivation}
+\label{app:BMS}
+We fill in the steps compressed in Sec.~\ref{sec:BMS}. Start from
+\eqref{eq:exact-integro} and trace over the bath. Writing
+$H_{SB}=\sum_\alpha A_\alpha\otimes B_\alpha$ (here $A=\sigma_x$, one
+term), the second--order generator is
+\begin{equation}
+\dot{\tilde\rho}(t) = -\int_0^t\dd s\,\Tr_B\!\big[\tilde H_{SB}(t),
+[\tilde H_{SB}(s),\tilde\rho(s)\otimes\rho_B]\big].
+\end{equation}
+Expanding the double commutator and using
+$\Tr_B[B_\alpha\rho_B]=0$ leaves products of the \emph{bath correlation
+functions}
+\begin{equation}
+C_{\alpha\beta}(t-s)=\Tr_B\!\big[\tilde B_\alpha(t)\tilde B_\beta(s)
+\rho_B\big],
+\end{equation}
+which depend only on $\tau=t-s$ because $\rho_B$ is stationary. Decompose
+the system coupling operator into eigenoperators of $H_S$,
+\begin{equation}
+A(\omega)=\sum_{\varepsilon'-\varepsilon=\omega}
+\Pi(\varepsilon)\,A\,\Pi(\varepsilon'),\qquad
+\tilde A(\omega,t)=\ee^{-\ii\omega t}A(\omega),
+\end{equation}
+with $\Pi$ the projectors onto the eigenspaces of $H_S$; for the qubit
+$A(\pm\epsilon)=\sigma_\mp$. Making the Markov replacement (A2)
+$\tilde\rho(s)\to\tilde\rho(t)$ and extending the integral to infinity,
+one gets the Redfield equation with the half--Fourier rates
+\begin{equation}
+\Gamma(\omega)=\int_0^\infty\dd\tau\,\ee^{\ii\omega\tau}C(\tau)
+= \tfrac12\gamma(\omega)+\ii S(\omega),
+\end{equation}
+where $\gamma(\omega)$ is the full Fourier transform
+\eqref{eq:rate-fourier} (a real, positive relaxation rate) and
+$S(\omega)$ its imaginary part (the Lamb shift). The secular
+approximation (A3) drops all cross terms with $\omega\neq\omega'$
+(they rotate at $\ee^{\ii(\omega'-\omega)t}$), yielding the diagonal,
+completely positive GKSL form
+\begin{equation}
+\dot\rho=-\ii[H_S+H_{LS},\rho]
++\sum_{\omega}\gamma(\omega)\Big(A(\omega)\rho A^\dagger(\omega)
+-\tfrac12\{A^\dagger(\omega)A(\omega),\rho\}\Big),
+\end{equation}
+with $H_{LS}=\sum_\omega S(\omega)A^\dagger(\omega)A(\omega)$. For the
+qubit this is exactly \eqref{eq:GKSL-qubit} with
+$\gamma_\downarrow=\gamma(\epsilon)$, $\gamma_\uparrow=\gamma(-\epsilon)$,
+and the KMS relation $\gamma(-\omega)=\ee^{-\beta\omega}\gamma(\omega)$
+gives \eqref{eq:db-rates}. The Lamb shift $H_{LS}\propto\sigma_+\sigma_-$
+merely renormalizes $\epsilon$ and is usually absorbed into it. See
+Ref.~\cite{Breuer2002}, Ch.~3, for the full treatment.
+
+\section{The reset model as a collisional process}
+\label{app:reset}
+The reset dissipator \eqref{eq:reset} arises from a repeated--interaction
+(collisional) model. In each interval $\dd t$, qubit $k$ either (prob.\
+$\gamma_k\dd t$) is swapped for a fresh bath qubit in state
+$\tau(\beta_k)$, or (prob.\ $1-\gamma_k\dd t$) is left untouched:
+\begin{equation}
+\rho(t+\dd t) = (1-\gamma_k\dd t)\,\rho(t)
++ \gamma_k\dd t\,\big(\Tr_k[\rho(t)]\otimes\tau(\beta_k)\big).
+\end{equation}
+Rearranging and taking $\dd t\to0$ gives exactly
+$\dot\rho=\gamma_k(\Tr_k[\rho]\otimes\tau(\beta_k)-\rho)$. The map is
+manifestly completely positive and trace preserving, and has
+$\tau(\beta_k)$ as its unique fixed point on qubit $k$, so it satisfies
+local detailed balance \eqref{eq:ldb} by construction. This is why the
+reset model can stand in for the microscopically derived dissipator
+whenever only steady--state populations and their thermodynamics matter
+(approximation (A4)).
+
+\section{Numerical implementation in QuTiP}
+\label{app:numerics}
+A minimal, self--contained recipe that reproduces the NOT gate.
+
+\paragraph{Operators.} With ordering $(C_0C_1C_z)$:
+\begin{verbatim}
+import numpy as np, qutip as qt
+I2 = qt.qeye(2); sm = qt.destroy(2); sp = sm.dag(); n = sp*sm
+def op(o,site): L=[I2,I2,I2]; L[site]=o; return qt.tensor(L)
+n0,n1,nz = op(n,0),op(n,1),op(n,2)
+H0   = eps0*n0 + eps1*n1 + eps_z*nz              # free Hamiltonian, Eq.(A? / HS)
+k100 = qt.tensor(qt.basis(2,1),qt.basis(2,0),qt.basis(2,0))
+k011 = qt.tensor(qt.basis(2,0),qt.basis(2,1),qt.basis(2,1))
+Hint = chi*(k100*k011.dag() + k011*k100.dag())   # resonant swap, Eq.(Hint)
+H    = H0 + Hint
+assert (qt.commutator(H0,Hint)).norm() < 1e-12    # resonance sanity check
+\end{verbatim}
+
+\paragraph{Reset dissipators.} Build collapse operators reproducing the
+reset fixed point for each bath (rate $\gamma_i$, occupation
+$g_i=g(\beta_i\epsilon_i)$):
+\begin{verbatim}
+def bath(site, gamma, g):     # detailed-balanced up/down channels
+    return [np.sqrt(gamma*(1-g))*op(sm,site),   # emission  (down)
+            np.sqrt(gamma*g)    *op(sp,site)]   # absorption(up)
+g0 = 1/(1+np.exp(beta0*eps0)); g1 = 1/(1+np.exp(beta1*eps1))
+gz = 1/(1+np.exp(betaz*eps_z))
+c_ops = bath(0,gamma,g0) + bath(1,gamma,g1) + bath(2,mu,gz)
+rho_ss = qt.steadystate(H, c_ops)                # collector-only NESS
+p_z = qt.expect(nz, rho_ss)                       # excited pop of C_z
+beta_z = np.log((1-p_z)/p_z)/eps_z                # -> approaches beta_v
+\end{verbatim}
+
+\paragraph{Two--tier dynamics (the full gate).} Because
+$\gamma\gg\mu,\mu'$ (Sec.~\ref{sec:dynamics}), do not integrate the stiff
+full model directly. Instead, for a grid of $\beta_z$ values compute the
+fast steady--state currents
+$j_{\calC}(\beta_z)=\mu\epsilon_z[\gz(\beta_z)-\gz(\beta_v)]$ and
+$j_\calM(\beta_z)=\mu'\epsilon_z[\gz(\beta_z)-\gz(\beta_r)]$, then
+integrate the scalar slow ODE \eqref{eq:calorimetric}
+$\dot\beta_z=-(\beta_z^2/\calC)(j_{\calC}+j_\calM)$ with a standard
+(non--stiff) solver; its fixed point is \eqref{eq:transfer}. Sweeping
+$\beta_1\in\{\beta_{\mathrm{hot}},\beta_{\mathrm{cold}}\}$ and decoding
+with \eqref{eq:encoding} yields the truth table; sweeping $\beta_1$
+continuously yields the transfer curve [paper Fig.~3B].
+
+\paragraph{Currents, entropy production, error.} Heat currents follow
+from \eqref{eq:current-def}, $j_k=\Tr[H\,\calL^{(k)}\rho]$; entropy
+production from \eqref{eq:entropy-prod},
+$\dot\Sigma=-\sum_k\beta_k j_k$ in the NESS. The readout error
+\eqref{eq:error} is obtained by convolving the transfer curve with the
+Gaussian $\mathcal N(\beta_z^\infty,C)$ and integrating against the guard
+bands. Plotting $\langle\Sigma\rangle$ vs $\langle\xi\rangle$ over a
+sweep of $\epsilon_1$ reproduces the trade--off of [paper Fig.~3C].
+
+\begin{implbox}[validation checklist]
+(i) $\|[H_0,H_{\mathrm{int}}]\|=0$ (resonance). (ii) Collector--only
+steady state gives $\beta_z\to\beta_v$ within tolerance. (iii) First law
+per bath: $\sum_k j_k=0$ in the NESS (energy conservation). (iv)
+$\dot\Sigma\ge0$ at every input. (v) Transfer curve from the ODE matches
+the closed form \eqref{eq:transfer}. Only after all five pass should any
+physics be trusted.
+\end{implbox}
+
+\begin{thebibliography}{9}
+\bibitem{LipkaBartosik2024}
+P.~Lipka--Bartosik, M.~Perarnau--Llobet, and N.~Brunner,
+``Thermodynamic computing via autonomous quantum thermal machines,''
+\emph{Sci.\ Adv.} \textbf{10}, eadm8792 (2024); arXiv:2308.15905.
+\bibitem{BrunnerVirtual2012}
+N.~Brunner, N.~Linden, S.~Popescu, and P.~Skrzypczyk,
+``Virtual qubits, virtual temperatures, and the foundations of
+thermodynamics,'' \emph{Phys.\ Rev.\ E} \textbf{85}, 051117 (2012).
+\bibitem{Linden2010}
+N.~Linden, S.~Popescu, and P.~Skrzypczyk,
+``How small can thermal machines be? The smallest possible
+refrigerator,'' \emph{Phys.\ Rev.\ Lett.} \textbf{105}, 130401 (2010).
+\bibitem{Hofer2017}
+P.~P.~Hofer \emph{et al.},
+``Markovian master equations for quantum thermal machines: local versus
+global approach,'' \emph{New J.\ Phys.} \textbf{19}, 123037 (2017).
+\bibitem{Breuer2002}
+H.-P.~Breuer and F.~Petruccione,
+\emph{The Theory of Open Quantum Systems}, Oxford University Press
+(2002).
+\end{thebibliography}
+
+\end{document}

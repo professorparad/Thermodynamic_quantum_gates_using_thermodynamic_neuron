@@ -20,6 +20,7 @@ from src.not_gate import (
     virtual_temperature,
 )
 from src.thermal_functions import fermi_occupation, inverse_fermi_occupation
+from src.tradeoff import integrated_reset_entropy, modulator_design_from_bounds
 from src.virtual_qubit import virtual_temperature_two_qubit
 
 
@@ -123,6 +124,15 @@ class NotGateEquationTests(unittest.TestCase):
         self.assertTrue(observed[(1.0, 0.0)])
         self.assertTrue(observed[(0.0, 1.0)])
         self.assertFalse(observed[(1.0, 1.0)])
+
+    def test_reset_entropy_is_non_negative(self):
+        params = NotGateParameters()
+        beta_r, mu_prime = modulator_design_from_bounds(params)
+        self.assertGreater(mu_prime, 0.0)
+        self.assertTrue(beta_r == beta_r)
+        result = integrated_reset_entropy(beta_v=2.0, params=params, steps=20)
+        self.assertGreaterEqual(result["entropy"], 0.0)
+        self.assertGreater(result["beta_z_final"], 0.0)
 
 
 if __name__ == "__main__":

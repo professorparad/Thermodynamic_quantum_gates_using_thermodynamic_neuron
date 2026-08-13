@@ -1,0 +1,1390 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathmorphing, shapes.geometric}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{appendix}
+\usepackage{physics}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=black}
+\usepackage{cleveref}
+
+\graphicspath{{figures/}}
+
+\linespread{1.12}
+\setlength{\parskip}{0.3em}
+
+% Academic theorem environments (black and white, no colour)
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}{Example}[section]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\kB}{k_{\mathrm{B}}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calK}{\mathcal{K}}
+\newcommand{\calP}{\mathcal{P}}
+\newcommand{\calQ}{\mathcal{Q}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calC}{\mathcal{C}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\bbR}{\mathbb{R}}
+\newcommand{\bbC}{\mathbb{C}}
+\newcommand{\bbZ}{\mathbb{Z}}
+\newcommand{\gz}{g_z}
+% additional macros (several are needed by Abhishek's part, kept intact)
+\newcommand{\calI}{\mathcal{I}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calS}{\mathcal{S}}
+\newcommand{\calB}{\mathcal{B}}
+\newcommand{\bbN}{\mathbb{N}}
+\newcommand{\expect}[1]{\langle #1 \rangle}
+\renewcommand{\d}{\mathrm{d}}
+\renewcommand{\dd}{\mathrm{d}}
+
+\title{\bfseries Thermodynamic Quantum Logic Gates:\\
+From the Autonomous Neuron to Floquet--Buffered\\
+Non--Markovian Operation}
+\author{Sparsho Chakraborty \and Abhishek}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document consolidates the theory, derivations, numerical
+reconstructions, non--Markovian tensor--network formulation, and Floquet
+buffer architecture developed for the thermodynamic--neuron project into
+a single reference. Part~\ref{part:sparsho} (Sparsho) is a self--contained,
+build--up derivation: it starts from a single qubit in a heat bath,
+constructs the open--system master equation and shows explicitly how the
+system--bath interaction is absorbed into the dissipator, introduces the
+reset model, builds the virtual qubit and the resonant three--body
+interaction, assembles the autonomous NOT gate and the general
+linearly--separable neuron, reproduces the baseline logic numerically,
+and then extends the treatment beyond weak coupling through the
+Nakajima--Zwanzig equation, the influence functional, and process--tensor
+(PT--MPO/TEMPO) methods, culminating in the Floquet--buffer architecture
+and its robustness analysis. All approximations are collected in a single
+table (Table~\ref{tab:approximations}). Part~\ref{part:abhishek}
+(Abhishek) contains the rigorous periodically--driven open--system
+formulation, kept intact.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+% #####################################################################
+\part{Sparsho: From the Single Qubit to Floquet--Buffered Thermodynamic Logic}
+\label{part:sparsho}
+% #####################################################################
+
+\section{Introduction: thermodynamics of computation}
+\label{sec:intro}
+Thermodynamic computing studies the energetic and entropic cost of
+information processing, and asks whether physical relaxation can be used
+\emph{directly} as a computational resource. In ordinary digital logic,
+robustness is obtained by engineering large barriers between stable
+states and by externally clocking transistor networks. In autonomous
+quantum thermal machines the situation is reversed: computation is
+performed by relaxation itself. Logical inputs are encoded into
+thermodynamic parameters (the inverse temperatures of heat baths), heat
+currents process those inputs, and the final state of an output degree of
+freedom is decoded as a logical value. This viewpoint continues the
+thermodynamics--of--information tradition of Landauer and Bennett and the
+quantum thermal--machine programme in which autonomous devices and
+\emph{virtual temperatures} are operational resources.
+
+The appeal of the autonomous model is that it needs no pre--programmed
+sequence of unitary gates. Its fragility is that the usual thermodynamic
+accounting depends on three conditions: weak system--bath coupling, rapid
+decay of bath correlations, and a clean separation between system
+timescales and reservoir memory. This part builds the model from the
+ground up so that every one of those conditions is visible and labelled
+(they are collected in Table~\ref{tab:approximations}), reproduces the
+baseline logic numerically, and then asks what must change when the
+conditions fail --- which is precisely where the Floquet buffer and the
+non--Markovian machinery enter.
+
+\paragraph{Scope of Part~\ref{part:sparsho}.} Sections
+\ref{sec:single-qubit}--\ref{sec:machine} build the open--system tools;
+Sections \ref{sec:virtual}--\ref{sec:general} build the neuron;
+Section~\ref{sec:reconstruction} reproduces the baseline logic
+numerically; Sections \ref{sec:nonmarkov}--\ref{sec:floquet} extend the
+treatment beyond weak coupling and introduce the Floquet buffer; and
+Section~\ref{sec:robustness} presents the robustness programme.
+Part~\ref{part:abhishek} then gives the rigorous driven--dissipative
+formulation.
+
+\subsection*{Derivation map for the supervisor}
+\addcontentsline{toc}{subsection}{Derivation map for the supervisor}
+The document is intentionally written as a derivation trail rather than
+as a short paper.  The following map states what each major block proves,
+where the physical idea enters, and why the step is needed.
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Block & What is derived & Why it is needed \\
+\midrule
+Single qubit &
+The Gibbs state $\tau(\beta)$ and the population
+$g(\beta\epsilon)=1/(1+\ee^{\beta\epsilon})$. &
+This is the thermal sigmoid from which the neuron activation function
+ultimately comes. \\
+Open system derivation &
+The system--bath Hamiltonian is projected to a reduced master equation;
+the interaction $H_{SB}$ becomes rates, jumps, Lamb shifts, and memory
+kernels. &
+This answers where the bath Hamiltonian and interaction have gone in the
+effective equations. \\
+Reset model &
+The reset dissipator, heat current, entropy production, and the precise
+approximations that make them thermodynamically consistent. &
+This is the Markovian computational baseline used in the original
+thermodynamic neuron. \\
+Virtual qubit &
+The two machine qubits define an effective transition with inverse
+temperature $\beta_v=(\beta_1\epsilon_1-\beta_0\epsilon_0)/\epsilon_z$. &
+The input bath temperature is converted into an effective output bias. \\
+Collector and modulator &
+Energy--conserving three--body swapping gives collector current; the
+modulator competes with it and fixes a stable output point. &
+The collector alone is only an amplifier; the modulator turns it into a
+gate with a threshold and noise margin. \\
+Perceptron mapping &
+The general virtual temperature is a linear score in the input inverse
+temperatures, followed by a thermal sigmoid. &
+This explains why a single thermodynamic neuron realizes exactly
+linearly separable Boolean functions. \\
+Non--Markovian extension &
+The Nakajima--Zwanzig memory kernel, influence functional, PT--MPO/TEMPO
+discretization, and convergence checks. &
+This shows what must replace the local Lindblad/reset picture when bath
+memory is important. \\
+Floquet buffer &
+A periodically driven intermediate subsystem produces sidebands,
+spectral filtering, and stroboscopic control. &
+This is the proposed mechanism for reducing leakage and improving
+logical distinguishability. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{The single qubit}
+\label{sec:single-qubit}
+A qubit is a two--level system with Hilbert space $\calH=\bbC^2$, basis
+$\{\ket{0},\ket{1}\}$, and free Hamiltonian
+\begin{equation}
+H = E_0\ket{0}\bra{0}+E_1\ket{1}\bra{1}
+\;\xrightarrow{\;E_0:=0\;}\;
+H=\epsilon\,n,\qquad n:=\ket{1}\bra{1},\quad \epsilon:=E_1-E_0,
+\label{eq:H-single}
+\end{equation}
+where only the gap $\epsilon$ is physical (the zero of energy is set at
+the ground state). In contact with a bath at inverse temperature
+$\beta=1/\kB T$ the qubit relaxes to the Gibbs state
+\begin{equation}
+\tau(\beta)=\frac{\ee^{-\beta H}}{Z},\quad Z=1+\ee^{-\beta\epsilon},
+\qquad
+\tau(\beta)=\frac{\ket{0}\bra{0}+\ee^{-\beta\epsilon}\ket{1}\bra{1}}
+{1+\ee^{-\beta\epsilon}} .
+\label{eq:gibbs}
+\end{equation}
+The excited--state occupation is the Fermi--Dirac function, which is
+simultaneously the logistic sigmoid,
+\begin{equation}
+\boxed{\;
+g(\beta\epsilon):=\bra{1}\tau(\beta)\ket{1}
+=\frac{1}{1+\ee^{\beta\epsilon}} = f(\beta\epsilon),\qquad
+f(x):=\frac{1}{1+\ee^{x}} .\;}
+\label{eq:fermi}
+\end{equation}
+This single identity --- a thermal population is a sigmoid of an inverse
+temperature --- is the seed of the entire neuron--perceptron
+correspondence developed in Section~\ref{sec:general}. The
+detailed--balance ratio that every thermalization model must reproduce
+is
+\begin{equation}
+\frac{\bra{1}\tau(\beta)\ket{1}}{\bra{0}\tau(\beta)\ket{0}}
+=\ee^{-\beta\epsilon}.
+\label{eq:db-ratio}
+\end{equation}
+
+\section{Open quantum systems: where the bath Hamiltonian goes}
+\label{sec:open}
+This section resolves a point that is easy to miss in the working
+equations: if the qubit is coupled to a bath, \emph{where is the
+qubit--bath interaction Hamiltonian, and why does it not appear
+explicitly in the master equation?} The answer is that it is present
+microscopically but, after the bath is eliminated, it is \emph{converted}
+into the dissipator. We show this in the projection--operator
+(Nakajima--Zwanzig) language, which also exposes exactly where the
+Markovian description can fail --- the entry point for
+Section~\ref{sec:nonmarkov}.
+
+\subsection{A closed qubit cannot thermalize}
+Unitary evolution $\rho(t)=\ee^{-\ii Ht}\rho(0)\ee^{\ii Ht}$ of the qubit
+\eqref{eq:H-single} generates only phases; the populations
+$\bra{0}\rho\ket{0},\bra{1}\rho\ket{1}$ are constant. A closed qubit
+therefore cannot relax to \eqref{eq:gibbs}. Dissipation, and hence
+computation--by--relaxation, is impossible without an environment: the
+bath is the only object that can change populations and drive the system
+to a steady state.
+
+\subsection{Microscopic model}
+Restore the environment as a bosonic reservoir bilinearly and
+transversally coupled to the qubit,
+\begin{equation}
+H_{\mathrm{tot}} = \underbrace{H_S}_{\epsilon\,n}
++ \underbrace{H_B}_{\sum_k\omega_k a_k^\dagger a_k}
++ \underbrace{H_{SB}}_{\sigma_x\otimes\sum_k\lambda_k(a_k+a_k^\dagger)} .
+\label{eq:Htot-open}
+\end{equation}
+The coupling is transverse ($\sigma_x=\sigma_++\sigma_-$) because the bath
+must be able to \emph{flip} the qubit to exchange the quantum $\epsilon$;
+a longitudinal $\sigma_z$ coupling would only dephase and never thermalize
+(a fact we exploit deliberately when the Floquet drive is chosen
+longitudinal in Section~\ref{sec:floquet}). The bilinearity is
+approximation (A2) in Table~\ref{tab:approximations}.
+
+\subsection{Nakajima--Zwanzig equation and the origin of memory}
+\label{sec:NZ}
+Write the exact Liouville--von~Neumann equation
+$\dot\rho_{\mathrm{tot}}=\calL\rho_{\mathrm{tot}}$,
+$\calL(\cdot)=-\ii[H_{\mathrm{tot}},\cdot]$, and introduce the projection
+superoperators onto a reference bath state $\rho_B$,
+\begin{equation}
+\calP X = \Tr_B(X)\otimes\rho_B,\qquad \calQ=1-\calP .
+\end{equation}
+Projecting the exact equation and formally solving the $\calQ$ part gives
+the exact Nakajima--Zwanzig equation for the relevant part
+$\calP\rho_{\mathrm{tot}}$,
+\begin{align}
+\frac{\dd}{\dd t}\calP\rho_{\mathrm{tot}}(t)
+&= \calP\calL\calP\rho_{\mathrm{tot}}(t)
++ \int_0^t \calK(t-\tau)\,\calP\rho_{\mathrm{tot}}(\tau)\,\dd\tau
++ \calI(t),
+\label{eq:NZ}\\
+\calK(t-\tau) &= \calP\calL\calQ\,\ee^{\calQ\calL(t-\tau)}\,\calQ\calL\calP,
+\qquad
+\calI(t)=\calP\calL\calQ\,\ee^{\calQ\calL t}\,\calQ\rho_{\mathrm{tot}}(0).
+\end{align}
+For a factorized initial state $\calQ\rho_{\mathrm{tot}}(0)=0$, so
+$\calI(t)=0$ (this is approximation (A1)). The memory kernel $\calK$ is
+the mathematical origin of non--Markovianity: the present reduced motion
+depends on the system's history. Equation~\eqref{eq:NZ} is exact; the
+Markovian master equation is what remains after three further
+approximations.
+
+\subsection{Born--Markov--secular reduction and the dissipator}
+\label{sec:BMS}
+Passing to the interaction picture, integrating once, tracing out the
+bath (using $\Tr_B[B_a\rho_B]=0$), and applying in turn the Born (A2),
+Markov (A3) and secular (A4) approximations yields the
+Gorini--Kossakowski--Sudarshan--Lindblad (GKSL) master equation
+\begin{equation}
+\boxed{\;
+\dot\rho_S = -\ii[H_S+H_{\mathrm{LS}},\rho_S]
++ \sum_\omega \gamma(\omega)\!\left[A(\omega)\rho_S A^\dagger(\omega)
+-\tfrac12\{A^\dagger(\omega)A(\omega),\rho_S\}\right],
+\;}
+\label{eq:GKSL}
+\end{equation}
+with eigenoperators $A(\omega)$ of $H_S$ (for the qubit,
+$A(\pm\epsilon)=\sigma_\mp$), rates
+$\gamma(\omega)=\int_{-\infty}^\infty \ee^{\ii\omega t}C(t)\,\dd t$ set by
+the bath correlation function $C(t)=\Tr_B[\tilde B(t)B\rho_B]$, and a Lamb
+shift $H_{\mathrm{LS}}$ that merely renormalizes $\epsilon$. For the qubit
+this is
+\begin{equation}
+\dot\rho = -\ii[H_S,\rho]
++\gamma_\downarrow\big(\sigma_-\rho\sigma_+-\tfrac12\{\sigma_+\sigma_-,\rho\}\big)
++\gamma_\uparrow\big(\sigma_+\rho\sigma_--\tfrac12\{\sigma_-\sigma_+,\rho\}\big).
+\label{eq:GKSL-qubit}
+\end{equation}
+\emph{This is the answer to the question posed above.} The interaction
+Hamiltonian $H_{SB}=\sigma_x\otimes B$ no longer appears as a
+Hamiltonian: eliminating the bath has converted it into the two
+dissipative channels of \eqref{eq:GKSL-qubit} --- $\gamma_\downarrow$
+multiplying $\sigma_-$ (emission), $\gamma_\uparrow$ multiplying
+$\sigma_+$ (absorption). The bath Hamiltonian $H_B$ has disappeared
+entirely; the coupling survives only through the two rates. That is why
+the working equations carry a free Hamiltonian and a dissipator but no
+explicit qubit--bath interaction Hamiltonian.
+
+The two rates are locked by the Kubo--Martin--Schwinger (detailed
+balance) condition $\gamma(-\omega)=\ee^{-\beta\omega}\gamma(\omega)$, so
+\begin{equation}
+\frac{\gamma_\uparrow}{\gamma_\downarrow}=\ee^{-\beta\epsilon},
+\qquad\Rightarrow\qquad
+p_{\mathrm{ss}}=\frac{\gamma_\uparrow}{\gamma_\uparrow+\gamma_\downarrow}
+= g(\beta\epsilon),
+\label{eq:db-rates}
+\end{equation}
+i.e.\ the qubit relaxes to exactly the thermal population \eqref{eq:fermi}.
+
+\subsection{The reset model}
+\label{sec:reset}
+Since only populations matter for the logic, we adopt the simplest
+dissipator with the correct fixed point --- the reset (collisional)
+model (A5),
+\begin{equation}
+\calL^{(k)}[\rho]=\gamma_k\big(\Tr_k[\rho]\otimes\tau(\beta_k)-\rho\big),
+\label{eq:reset}
+\end{equation}
+in which qubit $k$ is, with rate $\gamma_k$, swapped for a fresh bath
+qubit in the thermal state $\tau(\beta_k)$. It manifestly satisfies local
+detailed balance $\calL^{(k)}[\tau(\beta_k)]=0$. The heat current into
+bath $k$ is
+\begin{equation}
+j_k:=\Tr\!\big[H\calL^{(k)}[\rho]\big]
+=\gamma_k\epsilon_k\big[g(\beta_k\epsilon_k)-p_k\big],
+\label{eq:current-reset}
+\end{equation}
+with $p_k$ the excited population of qubit $k$. A qubit coupled to two
+baths acquires the sum of two dissipators, and the total current is the
+sum.
+
+\subsection{Multi--qubit machines, currents, entropy production}
+\label{sec:machine}
+A machine of qubits $\{C_k\}$ has free Hamiltonian
+$H_0=\sum_k\epsilon_k n_k$ and a time--independent, energy--preserving
+interaction $H_{\mathrm{int}}$ with $[H_{\mathrm{int}},H_0]=0$ (A6): the
+interaction may only connect degenerate eigenstates of $H_0$, shuffling
+excitations without changing the bare energy. Under weak coupling the
+machine obeys the local master equation (A7)
+\begin{equation}
+\dot\rho=-\ii[H_0+H_{\mathrm{int}},\rho]+\sum_k\calL^{(k)}[\rho].
+\label{eq:local-me}
+\end{equation}
+The second law for this class of machines is
+\begin{equation}
+\dot\Sigma:=\dot S(\rho)-\sum_k\beta_k j_k \ge 0,\qquad
+S(\rho)=-\Tr[\rho\ln\rho],
+\label{eq:entropy-prod}
+\end{equation}
+and in a nonequilibrium steady state ($\dot S=0$) all produced entropy is
+the weighted heat dumped into the baths, $\dot\Sigma=-\sum_k\beta_k j_k$.
+This $\dot\Sigma$ is the ``dissipation'' whose trade--off against
+accuracy we quantify in Section~\ref{sec:notgate}. The heat/work split
+that defines $j_k$ is itself an approximation (A11) that becomes
+ambiguous at strong coupling --- the caveat that Sections
+\ref{sec:nonmarkov}--\ref{sec:robustness} take seriously.
+
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering\small
+\caption{Master list of approximations used in Part~\ref{part:sparsho},
+with the replacement each makes, its regime of validity, and the failure
+mode when it is violated. Tags are referenced throughout the text.}
+\label{tab:approximations}
+\begin{tabularx}{\textwidth}{@{}l l X X@{}}
+\toprule
+Tag & Approximation & Statement / replacement & Regime of validity \& failure mode \\
+\midrule
+(A1) & Factorized initial state &
+$\rho_{\mathrm{tot}}(0)=\rho_S(0)\otimes\rho_B$, so $\calI(t)=0$ in
+\eqref{eq:NZ} &
+Valid if system and bath start uncorrelated; else an inhomogeneous
+memory term appears. \\
+(A2) & Born / weak coupling &
+$\rho_{\mathrm{tot}}(t)\approx\rho_S(t)\otimes\rho_B$; $H_{SB}$ bilinear &
+$\lambda\ll\epsilon$; fails when bath back--action and interaction energy
+are non--negligible. \\
+(A3) & Markov / short memory &
+$\rho_S(\tau)\to\rho_S(t)$, $\int_0^t\to\int_0^\infty$ &
+$\tau_B\ll\tau_R$; fails for structured reservoirs that return
+information (backflow). \\
+(A4) & Secular / RWA &
+drop terms with $\omega\neq\omega'$ &
+$\gamma\ll$ Bohr gaps; fails for near--degenerate transitions and drive
+sidebands. \\
+(A5) & Reset thermalization &
+$\calL^{(k)}\rho=\gamma_k(\Tr_k\rho\otimes\tau(\beta_k)-\rho)$ &
+Steady--state populations only; changes transient shape, not the
+inversion mechanism. \\
+(A6) & Energy--preserving $H_{\mathrm{int}}$ &
+$[H_{\mathrm{int}},H_0]=0$ &
+$\chi\ll\epsilon$; off--resonant (energy--changing) terms otherwise leak. \\
+(A7) & Local master equation &
+bare--qubit dissipators in \eqref{eq:local-me} &
+$\chi\ll\epsilon$; else use the global (dressed) dissipator to avoid
+second--law violations. \\
+(A8) & Modulator pinned to reference &
+$p_\calM^{\mathrm{ss}}\approx\gz(\beta_r)$ &
+$\mu'\ll\gamma$; else the modulator is dragged by the output bath. \\
+(A9) & Adiabatic elimination &
+steady currents inserted into the slow $\beta_z$ ODE &
+$\mu,\mu'\ll\gamma$; error $O(\mu/\gamma)$; fails if timescales overlap. \\
+(A10) & Small--$\epsilon_z$ sigmoid &
+$\gz(\beta)\approx\tfrac12-\tfrac{\beta\epsilon_z}{4}$ &
+$\epsilon_z\ll\epsilon_1$; larger $\epsilon_z$ blurs the parameter roles. \\
+(A11) & Weak heat--current split &
+$\dot Q_\alpha=\Tr(H_S\mathcal D_\alpha\rho)$ &
+Weak coupling; reduced--system heat currents ambiguous at strong
+coupling. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{The virtual qubit and the resonant interaction}
+\label{sec:virtual}
+
+\subsection{Virtual qubit and virtual temperature}
+Take two qubits $C_0,C_1$ (gaps $\epsilon_0\ge\epsilon_1$) each in their
+own bath at $\beta_0,\beta_1$. Absent interaction the joint state is the
+product $\tau_{C_0}(\beta_0)\otimes\tau_{C_1}(\beta_1)$. The two crossed
+states
+\begin{equation}
+\ket{0}_v:=\ket{0}_{C_0}\ket{1}_{C_1},\qquad
+\ket{1}_v:=\ket{1}_{C_0}\ket{0}_{C_1}
+\end{equation}
+span a \emph{virtual qubit} of gap $\epsilon_v=\epsilon_0-\epsilon_1$.
+Its population ratio defines a \emph{virtual temperature} exactly as in
+\eqref{eq:db-ratio}:
+\begin{equation}
+\ee^{-\beta_v\epsilon_v}
+=\frac{P_{10}}{P_{01}}
+=\frac{\ee^{-\beta_0\epsilon_0}}{\ee^{-\beta_1\epsilon_1}}
+\;\Rightarrow\;
+\boxed{\;\beta_v=\frac{\epsilon_0}{\epsilon_0-\epsilon_1}\beta_0
+-\frac{\epsilon_1}{\epsilon_0-\epsilon_1}\beta_1 .\;}
+\label{eq:betav}
+\end{equation}
+The virtual inverse temperature is a \emph{linear combination of the
+input inverse temperatures} --- the perceptron weighted sum. It can lie
+outside $[\beta_0,\beta_1]$ and even go negative (population inversion),
+giving the refrigerator / heat--pump / heat--engine regimes as $\beta_1$
+is swept at fixed $\beta_0$.
+
+\subsection{The resonant three--body interaction}
+\label{sec:interaction}
+Add a target qubit $C_z$ intended to inherit $\beta_v$. For a weak,
+energy--preserving coupling to transfer excitations resonantly between
+the virtual qubit and $C_z$, choose
+\begin{equation}
+\boxed{\;\epsilon_z=\epsilon_v=\epsilon_0-\epsilon_1,\;}
+\label{eq:resonance}
+\end{equation}
+which makes $\ket{100}$ (energy $\epsilon_0$) and $\ket{011}$ (energy
+$\epsilon_1+\epsilon_z$) degenerate. The unique Hermitian, energy--
+preserving operator connecting only this pair is the three--body swap
+\begin{equation}
+\boxed{\;
+H_{\mathrm{int}}
+=\chi\big(\ket{100}\bra{011}+\ket{011}\bra{100}\big)
+=\chi\big(\sigma_+^{(0)}\sigma_-^{(1)}\sigma_-^{(z)}+\mathrm{h.c.}\big),
+\;}
+\label{eq:Hint}
+\end{equation}
+with ordering $(C_0C_1C_z)$. In virtual--qubit variables
+$H_{\mathrm{int}}=\chi(\ket{1}_v\ket{0}_{C_z}\bra{0}_v\bra{1}_{C_z}
++\mathrm{h.c.})$: a resonant swap between the virtual qubit and $C_z$.
+Five points fix its form.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item \emph{Energy conservation / RWA.} Under \eqref{eq:resonance},
+$\ket{100}$ and $\ket{011}$ are the only degenerate pair differing by an
+allowed excitation rearrangement; every other off--diagonal term changes
+the bare energy and is dropped by the rotating--wave argument (A6).
+\item \emph{Three--body, not pairwise.} The virtual qubit is a joint
+property of $C_0,C_1$; a two--body $\sigma_+^{(0)}\sigma_-^{(1)}$ only
+rotates the excitation between them and transfers nothing to $C_z$.
+\item \emph{Physical action.} The swap places the virtual qubit in
+thermal contact with $C_z$, so in steady state $C_z$ carries $\beta_v$.
+\item \emph{Dropped partners.} Terms creating three excitations oscillate
+at $\epsilon_0+\epsilon_1+\epsilon_z$ and average away with error
+$O(\chi/\epsilon)$.
+\item \emph{No bare $C_0$--$C_1$ or $\sigma_z\sigma_z$ coupling.} These
+would hybridize the inputs and destroy the product--thermal structure
+from which $\beta_v$ was defined.
+\end{enumerate}
+
+\begin{remark}
+The resonant pair is $\ket{100}\leftrightarrow\ket{011}$. The pair
+$\ket{101}\leftrightarrow\ket{010}$ is detuned by
+$\epsilon_0+\epsilon_z-\epsilon_1=2\epsilon_z\neq0$ and is dynamically
+inert at $\chi\ll\epsilon_z$; building $H_{\mathrm{int}}$ from it is a
+common but fatal coding error. This form is confirmed by the baseline
+paper's interaction (its Eq.~(14)).
+\end{remark}
+
+\section{The NOT gate: collector, modulator, dynamics, logic}
+\label{sec:notgate}
+
+\subsection{The collector alone is a linear amplifier}
+The collector ($C_0,C_1,C_z$ with $H_0+H_{\mathrm{int}}$ and reset baths,
+rates $\gamma$ for $C_0,C_1$ and $\mu$ for $C_z$) delivers to the output
+bath $B_z$ the current
+\begin{equation}
+j_{\calC}=\mu\epsilon_z\big[\gz(\beta_z)-\gz(\beta_v)\big],\qquad
+\gz(x):=g(x\epsilon_z).
+\label{eq:jC}
+\end{equation}
+In isolation $j_{\calC}=0$ gives $\beta_z=\beta_v$, an \emph{affine}
+function of the input by \eqref{eq:betav}: an inverting linear amplifier,
+which amplifies input noise together with the signal.
+
+\subsection{Why the modulator is needed}
+\label{sec:modulator}
+A good gate must \emph{saturate}: flat inside a logical region (noise
+rejected), steep across the decision boundary. This nonlinearity is
+supplied by the modulator $\calM$ --- a single qubit
+$H_\calM=\epsilon_z n_\calM$ in simultaneous contact with a fixed
+reference bath $B_r$ (rate $\gamma$) and the output bath $B_z$ (rate
+$\mu'$). Its excited population obeys
+$\dot p_\calM=\gamma[\gz(\beta_r)-p_\calM]+\mu'[\gz(\beta_z)-p_\calM]$,
+with steady state
+\begin{equation}
+p_\calM^{\mathrm{ss}}
+=\frac{\gamma\gz(\beta_r)+\mu'\gz(\beta_z)}{\gamma+\mu'}
+\xrightarrow{\mu'\ll\gamma}\gz(\beta_r)
+\quad\text{(A8)},
+\end{equation}
+so the modulator is a heat valve delivering
+\begin{equation}
+j_\calM=\mu'\epsilon_z\big[\gz(\beta_z)-\gz(\beta_r)\big]
+\label{eq:jM}
+\end{equation}
+that continuously pulls $\beta_z$ toward $\beta_r$, competing with the
+collector. Without the second bath there is no valve and the gate
+degenerates to the linear amplifier: the modulator is what turns the
+weighted sum into a saturating (sigmoidal) activation.
+
+\subsection{Dynamics, fixed point, transfer characteristic}
+\label{sec:dynamics}
+The finite output reservoir (heat capacity $\calC$) evolves by the
+calorimetric law
+\begin{equation}
+\dot\beta_z=-\frac{\beta_z^2}{\calC}\big(j_{\calC}+j_\calM\big),
+\label{eq:calorimetric}
+\end{equation}
+consistent with inserting the steady currents \eqref{eq:jC},\eqref{eq:jM}
+because $\gamma\gg\mu,\mu'$ (adiabatic elimination, A9). The fixed point
+$j_{\calC}+j_\calM=0$ gives, with $\Delta:=\mu/(\mu+\mu')$,
+\begin{equation}
+\gz(\beta_z^\infty)=\Delta\,\gz(\beta_v)+(1-\Delta)\,\gz(\beta_r),
+\qquad
+\beta_z^\infty=\frac{1}{\epsilon_z}\ln\!\Big[\tfrac{1-q^\star}{q^\star}\Big],
+\;\; q^\star=\gz(\beta_z^\infty).
+\label{eq:fixedpoint}
+\end{equation}
+Fixing the modulator so the output is confined to
+$[\beta_{\mathrm{hot}},\beta_{\mathrm{cold}}]$ requires
+$\Delta=\gz(\beta_{\mathrm{hot}})-\gz(\beta_{\mathrm{cold}})$ and
+$\gz(\beta_r)=\gz(\beta_{\mathrm{cold}})/(1-\Delta)$, giving the exact
+transfer characteristic
+\begin{equation}
+\beta_z^\infty=\frac{1}{\epsilon_z}\ln\!\big[Q(\beta_v)^{-1}-1\big],
+\quad
+Q(\beta_v)=\gz(\beta_{\mathrm{hot}})\gz(\beta_v)
++\gz(\beta_{\mathrm{cold}})\big(1-\gz(\beta_v)\big).
+\label{eq:transfer}
+\end{equation}
+
+\subsection{Emergence of the sigmoid}
+Because $\beta_v\epsilon_z=\beta_0\epsilon_0-\beta_1\epsilon_1$ exactly,
+$\gz(\beta_v)=f(\beta_0\epsilon_0-\beta_1\epsilon_1)$, and expanding
+\eqref{eq:transfer} for small $\epsilon_z$ (A10) gives
+\begin{equation}
+\beta_z^\infty\simeq\beta_{\mathrm{cold}}
++(\beta_{\mathrm{hot}}-\beta_{\mathrm{cold}})\,
+f\big(\beta_0\epsilon_0-\beta_1\epsilon_1\big),
+\label{eq:sigmoid}
+\end{equation}
+a sigmoidal interpolation between the logical rails whose argument is the
+perceptron pre--activation. The gain at threshold ($\beta_1^\ast\approx
+\beta_0$) is $\calA_{\max}=-\epsilon_1\Delta\beta/4$ with
+$\Delta\beta=\beta_{\mathrm{cold}}-\beta_{\mathrm{hot}}$: steeper gate
+$\Rightarrow$ larger $\epsilon_1$ $\Rightarrow$ more dissipation.
+
+\subsection{Logic encoding and the error--dissipation trade--off}
+\label{sec:logic}
+The bit is encoded and decoded by
+\begin{equation}
+x=\begin{cases}0,&\beta_1=\beta_{\mathrm{hot}}\\1,&\beta_1=\beta_{\mathrm{cold}}\end{cases}
+\qquad
+y=\Theta\!\big(\beta_z^\infty-\beta_{\mathrm{th}}\big),\quad
+\beta_{\mathrm{th}}=\tfrac12(\beta_{\mathrm{hot}}+\beta_{\mathrm{cold}}),
+\label{eq:encoding}
+\end{equation}
+with logical noise margin
+$m_{\mathrm{NOT}}=\min[\beta_z^\infty(\beta_{\mathrm{hot}})-\beta_{\mathrm{th}},
+\beta_{\mathrm{th}}-\beta_z^\infty(\beta_{\mathrm{cold}})]$. Finite--bath
+fluctuations ($\sim\mathcal N(\beta_z^\infty,\calC)$) give a nonzero
+decoding error $\langle\xi\rangle$; sharpening the gate (larger
+$\epsilon_1$) lowers $\langle\xi\rangle$ but raises the integrated entropy
+production $\langle\Sigma\rangle$ of \eqref{eq:entropy-prod}. This
+monotone accuracy--dissipation trade--off is the central thermodynamic
+cost of the gate and the baseline the Floquet buffer seeks to improve.
+
+\section{The general neuron: perceptron equivalence and networks}
+\label{sec:general}
+The $n$--input collector ($C_0$ reference, $C_1\ldots C_n$ inputs, $C_z$
+output) selects a virtual qubit via a binary vector
+$h=(h_0,\ldots,h_n)$; its virtual temperature is
+\begin{equation}
+\beta_v=\frac{1}{\epsilon_z}\sum_{i=0}^{n}(-1)^{h_i}\beta_i\epsilon_i,
+\label{eq:betav-gen}
+\end{equation}
+again a linear score of the inputs. With overall scale $\alpha$, the
+output is $\beta_z^\infty=f\big(\alpha(w_0+\sum_i w_i\beta_i)\big)
++O(\epsilon_z)$ --- exactly a sigmoid perceptron. Hence a single neuron
+realizes precisely the linearly--separable functions; its hardware is read
+off a trained perceptron by
+$h_k=\Theta(-w_k)$, $\epsilon_k=\alpha|w_k|$ (with the reference set by
+$|\epsilon_z-\sum_k w_k|$), $\beta_0=|w_0|/|\epsilon_z-\sum_k w_k|$, and
+$\alpha$ trading accuracy against dissipation. NOR ($h=(0,1,1)$,
+$\epsilon=\alpha(\epsilon_z+4,2,2)$) and 3--MAJORITY ($h=(1,0,0,0)$,
+$\epsilon=\alpha(\epsilon_z+12,3,3,3)$) follow directly; non--separable
+functions such as XOR require a small network (NAND, OR $\to$ AND) whose
+neurons are composed through a clock--gated readout that makes each finite
+output bath act as an infinite input bath for the next neuron.
+
+\section{Baseline reconstruction: numerical reproduction}
+\label{sec:reconstruction}
+The analytic model of Sections \ref{sec:virtual}--\ref{sec:general} was
+reconstructed numerically to fix the Markovian reference against which
+every extension is judged. The reconstruction follows a fixed order:
+(i) the thermal occupation \eqref{eq:fermi}; (ii) the virtual temperature
+\eqref{eq:betav}; (iii) the reset currents \eqref{eq:jC},\eqref{eq:jM};
+(iv) the output fixed point \eqref{eq:fixedpoint}; (v) the threshold
+decoder \eqref{eq:encoding}; (vi) an energy--scale sweep. The closed--form
+fixed point
+$\beta_z^\star=\epsilon_z^{-1}\ln[(1-q^\star)/q^\star]$ with
+$q^\star=[\mu\gz(\beta_v)+\mu'\gz(\beta_r)]/(\mu+\mu')$ lets truth tables
+be evaluated without time--integration error. The reconstructed logical
+noise margin is
+$m_{\mathrm{NOT}}=\min[\beta_z^\star(\beta_{\mathrm{hot}})-\beta_{\mathrm{th}},
+\beta_{\mathrm{th}}-\beta_z^\star(\beta_{\mathrm{cold}})]$; a positive
+margin certifies the Boolean NOT.
+
+\subsection*{Results at a glance}
+\addcontentsline{toc}{subsection}{Results at a glance}
+The work completed in this repository establishes four concrete outputs.
+First, the baseline autonomous NOT gate was reconstructed from the
+closed--form reset equations, giving the expected inversion of the input
+temperature into the output temperature and a positive noise margin in
+the working parameter window. Second, the energy--scale sweep reproduced
+the error--dissipation trade--off: sharper transfer curves reduce
+logical error but require larger entropy production. Third, the same
+perceptron construction was extended to NOR, MAJORITY, and a composed
+XOR network, confirming the linearly--separable limitation of one
+thermodynamic neuron and the need for networks for non--separable logic.
+Fourth, the non--Markovian and Floquet studies produced the comparison,
+convergence, ablation, and robustness figures used later in this part,
+which define the parameter regimes where reservoir memory, drive
+frequency, and buffer coupling either preserve or destroy useful logic.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.72\linewidth]{fig2_virtual_temperature_regimes.png}
+\caption{Reconstructed virtual--temperature regimes of the collector,
+validating the sign and scale of \eqref{eq:betav} before any decoding.}
+\label{fig:virt-regimes}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.72\linewidth]{not_gate_transfer_curves.png}
+\caption{Reconstructed NOT transfer curves \eqref{eq:transfer} for several
+collector energy scales. The gate is realized when the hot-- and
+cold--input outputs lie on opposite sides of $\beta_{\mathrm{th}}$;
+increasing $\epsilon_1$ sharpens the curve toward the ideal step.}
+\label{fig:not-curves}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.68\linewidth]{fig3c_error_dissipation_tradeoff.png}
+\caption{Reconstructed error--dissipation trade--off: lowering the
+decoding error requires larger entropy production, as anticipated in
+Section~\ref{sec:logic}.}
+\label{fig:err-diss}
+\end{figure}
+
+\begin{table}[H]\centering\small
+\caption{Representative error--dissipation data for increasing collector
+energy scale $\epsilon_1$ (uniform inputs).}
+\label{tab:err-diss}
+\begin{tabular}{rrrr}
+\toprule
+$\epsilon_1$ & Average error & Average entropy production & Hot-input output \\
+\midrule
+1  & $1.6477\times10^{-1}$ & $3.7266\times10^{4}$ & 1.6561 \\
+2  & $3.1114\times10^{-2}$ & $2.8675\times10^{5}$ & 1.7588 \\
+5  & $2.1882\times10^{-4}$ & $3.1029\times10^{6}$ & 1.9338 \\
+10 & $1.9770\times10^{-5}$ & $9.5496\times10^{6}$ & 1.9942 \\
+20 & $1.5480\times10^{-5}$ & $1.9882\times10^{7}$ & 2.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The same reconstruction reproduces multi--input and composed logic:
+the NOR response surface (Fig.~\ref{fig:nor}), the three--input majority
+response (Fig.~\ref{fig:maj}), and an XOR network assembled from
+thermodynamic--neuron subgates (Fig.~\ref{fig:xor}), consistent with the
+perceptron correspondence of Section~\ref{sec:general}.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{fig6_nor_response_surface.png}
+\caption{Reconstructed NOR response surface: high output only near the
+low--low input corner.}
+\label{fig:nor}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{fig7_majority_response_slices.png}
+\caption{Reconstructed three--input majority response (two--dimensional
+slices), a linear thermodynamic score of the input temperatures.}
+\label{fig:maj}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{fig8_xor_network_response.png}
+\caption{Reconstructed XOR response from a small network of neurons;
+XOR is not linearly separable and cannot be a single perceptron.}
+\label{fig:xor}
+\end{figure}
+
+\section{Beyond weak coupling: non--Markovian dynamics}
+\label{sec:nonmarkov}
+The reset model rests on the whole approximation chain of
+Table~\ref{tab:approximations}. For a \emph{structured} reservoir the
+Markov step (A3) is the first to fail: the memory kernel $\calK$ of the
+exact Nakajima--Zwanzig equation \eqref{eq:NZ} is no longer sharply
+peaked, and the reduced motion
+\begin{equation}
+\dot\rho_S(t)=-\ii[H_S,\rho_S(t)]
++\int_0^t\calK(t-\tau)\rho_S(\tau)\,\d\tau
+\end{equation}
+retains genuine history dependence: revivals, information backflow, and
+modified relaxation. A strong claim about non--Markovian thermodynamic
+logic therefore requires a numerically exact treatment of the memory,
+not a Lindblad surrogate.
+
+\subsection{Influence functional and process tensor}
+For a Gaussian bosonic bath linearly coupled to the system, the bath can
+be integrated out exactly. On a forward--backward path pair
+$(s^+,s^-)$ the reduced propagator carries the Feynman--Vernon influence
+functional
+\begin{equation}
+\mathcal F[s^+,s^-]
+=\exp\!\Big[-\!\int_0^t\!\d\tau\!\int_0^\tau\!\d\tau'\,
+(s^+_\tau-s^-_\tau)\big(\eta(\tau-\tau')s^+_{\tau'}
+-\eta^\ast(\tau-\tau')s^-_{\tau'}\big)\Big],
+\end{equation}
+with the bath response kernel set by the spectral density,
+\begin{equation}
+\eta(t)=\int_0^\infty\!\d\omega\,J(\omega)
+\Big[\coth\!\big(\tfrac{\beta\omega}{2}\big)\cos\omega t-\ii\sin\omega t\Big],
+\qquad J(\omega)=2\alpha\,\omega^s\ee^{-\omega/\omega_c}.
+\label{eq:influence}
+\end{equation}
+Discretizing time into $N$ slices makes the influence functional a
+multilinear object --- the \emph{process tensor} --- mapping a sequence of
+control operations $\mathcal A_0,\ldots,\mathcal A_{N-1}$ to the final
+state,
+\begin{equation}
+\rho_N=\Upsilon_{N:0}\star(\mathcal A_{N-1}\otimes\cdots\otimes\mathcal A_0),
+\qquad
+\Upsilon_{N:0}=\sum_{\{\alpha_k\}}M^{[N]}_{\alpha_{N-1}}\cdots
+M^{[1]}_{\alpha_0}M^{[0]} .
+\label{eq:PT}
+\end{equation}
+
+\subsection{MPS, MPO, TTN and why memory is compressible}
+Written as a matrix product operator along the time axis, the process
+tensor has bond dimension $\chi$ measuring the memory carried from past to
+future:
+\begin{equation}
+\Upsilon=\sum_{\{i_k,j_k\}}W^{[0]i_0j_0}\cdots W^{[N]i_Nj_N}
+\ket{i_0\cdots i_N}\bra{j_0\cdots j_N} .
+\end{equation}
+A Markovian bath has $\chi=1$; a non--Markovian but compressible bath has
+$1<\chi\ll d^{2N}$, so singular--value truncation keeps the physically
+relevant temporal correlations without the exponential blow--up of an
+explicit system--plus--bath simulation (dimension $d_Sd^N$). A
+tree--tensor--network (TTN) generalization places each reservoir of the
+neuron on a separate branch, which is why the numerical programme lists
+PT--MPO/TEMPO as the primary structured--bath backend and TTN as the
+fallback when memory growth dominates. This is the same chain / MPS
+machinery treated rigorously in Part~\ref{part:abhishek}.
+
+\subsection{A single worked example: from the memory kernel to output logic}
+Consider one logical qubit coupled to a structured bath through a driven
+buffer, $S\leftrightarrow F(t)\leftrightarrow B$. (1) The full state obeys
+$\dot\rho_{SFB}=-\ii[H_{SFB}(t),\rho_{SFB}]$ and the logical state is
+$\rho_S=\Tr_{FB}\rho_{SFB}$. (2) Tracing out buffer and bath gives a
+driven memory kernel $\calK_F(t,\tau)$; tuning the drive $(A,\Omega)$
+reshapes $\calK_F$ and hence how information leaves or returns to the
+qubit. (3) Rather than construct $\calK_F$ explicitly, the process--tensor
+method builds $\Upsilon_{n:0}$ and contracts it with the system operations
+\eqref{eq:PT}. (4) For a binary gate, evolve two inputs
+$\rho_S^{(0)}(0),\rho_S^{(1)}(0)$ and read the distinguishability
+\begin{equation}
+D_{\mathrm{out}}=\tfrac12\big\|\rho_S^{(0)}(t_f)-\rho_S^{(1)}(t_f)\big\|_1 .
+\label{eq:tracedist}
+\end{equation}
+The buffer is useful only if it improves $D_{\mathrm{out}}$ (or the
+decoding margin) at an acceptable drive cost.
+
+\subsection{Structured--bath benchmark and convergence}
+Before any gate claim, the solver must pass numerical--health checks:
+trace preservation $\delta_{\mathrm{tr}}=|\Tr\rho-1|$, Hermiticity
+$\delta_{\mathrm{herm}}=\|\rho-\rho^\dagger\|_F$, and convergence under
+$\Delta t$ and memory time $\tau_{\mathrm{mem}}$. A single qubit in the
+bath \eqref{eq:influence} was tracked across sub--Ohmic, Ohmic, and
+super--Ohmic regimes (Table~\ref{tab:struct-bath},
+Fig.~\ref{fig:nonmarkov}); the largest trace deviation was
+$1.884\times10^{-5}$ and the largest Hermiticity error
+$5.011\times10^{-7}$, with working point
+$(\Delta t,\tau_{\mathrm{mem}},\chi_{\mathrm{svd}})=(0.05,1.0,10^{-6})$.
+A first quick scan failed the $10^{-3}$ criterion ($4.234\times10^{-3}$);
+refining $\Delta t$ at fixed $\tau_{\mathrm{mem}}=1.0$ reduced the drift
+to $6.579\times10^{-4}$ (pass).
+
+\begin{table}[H]\centering\small
+\caption{Single--qubit structured--bath benchmark across spectral regimes.}
+\label{tab:struct-bath}
+\begin{tabular}{lrrrr}
+\toprule
+Regime & $s$ & Final purity & Final $\sigma_z$ & Runtime (s) \\
+\midrule
+Sub-Ohmic & 0.5 & 0.5070 & $-0.1184$ & 20.996 \\
+Ohmic & 1.0 & 0.5248 & $0.2230$ & 6.582 \\
+Super-Ohmic & 3.0 & 0.8421 & $0.8272$ & 4.479 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.72\linewidth]{single_qubit_research_regime_comparison.png}
+\caption{Reduced single--qubit dynamics for three structured--bath
+regimes --- the numerical bridge between the Markovian neuron and later
+memory--bearing gate simulations.}
+\label{fig:nonmarkov}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{convergence_scan_quick.png}
+\caption{Quick convergence scan (structured--bath benchmark), used as a
+deliberate failure mode before interpreting non--Markovian logic.}
+\label{fig:conv}
+\end{figure}
+
+\section{The Floquet buffer}
+\label{sec:floquet}
+To reduce the logical qubit's direct exposure to the reservoir, a
+periodically driven buffer is inserted between subsystem and bath,
+\begin{equation}
+S\longleftrightarrow F(t)\longleftrightarrow B
+\qquad\text{versus the direct}\qquad
+S\longleftrightarrow B .
+\end{equation}
+A minimal buffer Hamiltonian, as implemented in the bridge code, is
+\begin{equation}
+H_F(t)=\tfrac{\epsilon_F}{2}\sigma_z+A\cos(\Omega t)\sigma_x,\qquad
+H_{SF}=g_{SF}\,\sigma_x^{(S)}\!\otimes\sigma_x^{(F)},\qquad
+T=\tfrac{2\pi}{\Omega},
+\label{eq:bufferH}
+\end{equation}
+so the full bridge Hamiltonian is $H(t)=H_S+H_F(t)+H_{SF}+H_B+H_{FB}$.
+(The refined, purely longitudinal drive that yields clean Bessel
+sidebands is analyzed rigorously in Part~\ref{part:abhishek}; here we keep
+the minimal implemented form.) In a weak Markovian treatment of the
+buffer--bath contact the logical qubit sees a time--periodic generator
+$\dot\rho_S=\calL_{\mathrm{eff}}(t)\rho_S$,
+$\calL_{\mathrm{eff}}(t+T)=\calL_{\mathrm{eff}}(t)$, whose rates sample the
+bath at drive--shifted frequencies $\omega+n\Omega$. This is the origin of
+Floquet filtering: the buffer presents the effective spectral density
+\begin{equation}
+J_{\mathrm{eff}}(\omega)=\sum_n|c_n(A,\Omega)|^2\,J(\omega+n\Omega),
+\label{eq:Jeff}
+\end{equation}
+whose weights $|c_n|^2$ are set by the drive.
+
+\subsection{Operational metrics}
+The buffer is assessed operationally by the output trace distance
+\eqref{eq:tracedist} and by the drive--work proxy
+\begin{equation}
+W_{\mathrm{proxy}}=\int_0^{t_f}\Tr\!\big[\rho(t)\,\dot H_F(t)\big]\d t
+=-A\Omega\int_0^{t_f}\sin(\Omega t)\,\langle\sigma_x\rangle_t\,\d t .
+\label{eq:wproxy}
+\end{equation}
+This is an operational indicator, not a full strong--coupling
+thermodynamic audit (which must also track interaction and bath energy,
+cf.\ approximation (A11)).
+
+\subsection{Screening and ablation}
+A single run is insufficient evidence. Screening over drive amplitude,
+drive frequency and system--buffer coupling found positive trace--distance
+gain $\Delta D=D_{\mathrm{buffer}}-D_{\mathrm{direct}}$ in $14$ of $15$
+configurations, with best gain $0.711315$ at weak system--buffer coupling.
+The ablation (Table~\ref{tab:ablation}) isolates the drive: with $A=0$ the
+buffer is a passive spacer and \emph{degrades} distinguishability
+($\Delta D=-0.149461$); the benefit appears only under periodic
+modulation, consistent with the sideband picture \eqref{eq:Jeff}. The
+strongest gain at weak $g_{SF}$ indicates the buffer acts as a selective
+mediated channel rather than a strongly hybridized extra degree of
+freedom.
+
+\begin{table}[H]\centering\small
+\caption{Ablation of the Floquet--buffer bridge. Direct baseline
+$D_{\mathrm{direct}}(t_f)=0.236928$; gain
+$\Delta D=D_{\mathrm{buffer}}-D_{\mathrm{direct}}$.}
+\label{tab:ablation}
+\begin{tabular}{lrrrr}
+\toprule
+Case & $D_{\mathrm{buffer}}(t_f)$ & $\Delta D$ & Relative gain & $|W_{\mathrm{proxy}}|$ \\
+\midrule
+Full driven buffer & 0.320480 & 0.083551 & 0.352644 & 0.176530 \\
+No periodic drive & 0.087467 & $-0.149461$ & $-0.630829$ & 0 \\
+Weak drive & 0.372211 & 0.135282 & 0.570984 & 0.086262 \\
+Strong drive & 0.401688 & 0.164760 & 0.695401 & 0.087613 \\
+Weak system--buffer coupling & 0.948243 & 0.711315 & 3.002237 & 0.019354 \\
+Strong system--buffer coupling & 0.601144 & 0.364215 & 1.537240 & 0.439431 \\
+Weak buffer--bath contact & 0.237160 & 0.000232 & 0.000979 & 0.021202 \\
+Strong buffer--bath contact & 0.405590 & 0.168662 & 0.711869 & 0.398363 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{floquet_buffer_comparison.png}
+\caption{Direct versus Floquet--buffered dynamics in the bridge model.}
+\label{fig:floq-comp}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.70\linewidth]{floquet_parameter_sweep.png}
+\caption{Floquet parameter sweep; best screened trace--distance gain
+$0.711315$.}
+\label{fig:floq-sweep}
+\end{figure}
+
+Embedding the buffer in the full three--qubit NOT surrogate preserves the
+truth table: both direct and buffered GKSL surrogates give
+$\calA_{\mathrm{NOT}}=1$ with small drive--work proxy
+(Table~\ref{tab:outcomes}). Under the Phase~V PT--MPO/TEMPO structured
+bath the calibrated decoder (architecture--specific threshold
+$\beta_{\mathrm{th}}^{(a)}=\tfrac12[\beta_{\mathrm{eff}}^{(a)}(0)
++\beta_{\mathrm{eff}}^{(a)}(1)]$) also passes, but the buffered margin is
+small ($\sim2.6\times10^{-5}$ versus a direct margin $\sim1.43\times10^{-1}$)
+--- truth--table passing is binary, robustness is a margin statement.
+
+\begin{table}[H]\centering\small
+\caption{Main numerical outcomes across the staged programme.
+$\calA_{\mathrm{NOT}}$ is truth--table accuracy; $D(t_f)$ the final
+logical trace distance.}
+\label{tab:outcomes}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.20\linewidth}p{0.18\linewidth}p{0.24\linewidth}@{}}
+\toprule
+Experiment & Metric & Result & Interpretation \\
+\midrule
+Floquet bridge & $\Delta D$ & $0.0836$ / $0.711$ best & driven buffer can improve distinguishability \\
+No--drive ablation & $\Delta D$ & $-0.1495$ & passive buffer degrades; drive essential \\
+3--qubit GKSL direct & $\calA_{\mathrm{NOT}},D$ & $1.000,\,0.0249$ & direct NOT passes \\
+3--qubit GKSL buffered & $\calA_{\mathrm{NOT}},D$ & $1.000,\,0.0241$ & buffered NOT passes \\
+PT--MPO/TEMPO direct & $\calA_{\mathrm{NOT}}$, margin & $1.000,\,1.43\times10^{-1}$ & structured--bath direct passes \\
+PT--MPO/TEMPO buffered & $\calA_{\mathrm{NOT}}$, margin & $1.000,\,2.60\times10^{-5}$ & passes, close to boundary \\
+GKSL phase map & robust points & $68/80$ & broad passing region \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CMOS--inverter correspondence}
+The buffered output stage plays the functional role of a regulated CMOS
+inverter: an active stage regenerates the logical node so the load does
+not directly set the logic level, and the figure of merit is the noise
+margin $m=\min_x|\beta_{\mathrm{eff}}(x)-\beta_{\mathrm{th}}|$ relative to
+the switching threshold. The direct branch $C_z\leftrightarrow B_z$ is a
+node loaded directly by the environment; the buffered branch
+$C_z\leftrightarrow F_z(t)\leftrightarrow B_z$ inserts a driven stage that
+reshapes the reservoir spectrum through the sidebands \eqref{eq:Jeff}. The
+analogy is functional, not a claim of electrical equivalence; the detailed
+CMOS dictionary (gain, noise margins, clocked operation) is developed in
+Part~\ref{part:abhishek}.
+
+\section{Robustness programme and outlook}
+\label{sec:robustness}
+The remaining scientific task is to map the region where the buffered
+thermodynamic NOT stays correct \emph{and} well separated. The parameter
+vector is
+$\theta=(\alpha,\omega_c,s,\tau_{\mathrm{mem}},\Delta t,A,\Omega,
+g_{SF},\epsilon_F,t_f)$, and the robust region enforces a margin,
+\begin{equation}
+\calR_{\mathrm{robust}}(m_0)=\{\theta:\calA_{\mathrm{NOT}}(\theta)=1,\;
+m(\theta)>m_0\},
+\end{equation}
+the central comparison being
+$\calR_{\mathrm{robust}}^{\mathrm{buffered}}(m_0)$ versus
+$\calR_{\mathrm{robust}}^{\mathrm{direct}}(m_0)$. Each point is classified
+as fail ($\calA<1$), fragile pass ($\calA=1$, $m<m_0$), or robust pass
+($\calA=1$, $m\ge m_0$). A first GKSL surrogate sweep ($80$ points,
+$m_0=0.05$) gave $68$ robust passes, $0$ fragile, $12$ fail
+(Figs.~\ref{fig:robmap}--\ref{fig:rob3d}); however the best
+buffered--minus--direct margin gain was only $4.02\times10^{-5}$, so in
+this surrogate the buffer preserves the truth table without yet enlarging
+the margin. The stronger claim must be retested with the PT--MPO/TEMPO or
+HEOM backend.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.92\linewidth]{robustness_phase_maps.png}
+\caption{GKSL robustness phase maps at the largest drive amplitude:
+buffered margin, buffered$-$direct margin, and trace--distance gain over
+system--buffer and bath--coupling scales.}
+\label{fig:robmap}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.68\linewidth]{robustness_three_phase_classification.png}
+\caption{Three--phase classification (robust pass / fragile / fail),
+analogous to CMOS noise--margin analysis.}
+\label{fig:rob3class}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.66\linewidth]{robustness_phase_3d.png}
+\caption{Three--dimensional robustness phase diagram over drive amplitude,
+bath--coupling scale, and system--buffer coupling; marker size scales with
+the buffered decoding margin.}
+\label{fig:rob3d}
+\end{figure}
+
+\paragraph{Validation required for a journal--grade claim.} Before
+asserting that the buffer enlarges the robust region under genuine memory,
+the programme must add: (i) a weak--coupling cross--check that PT--MPO
+reproduces the GKSL limit; (ii) a PT--MPO convergence surface
+$(\Delta t,\tau_{\mathrm{mem}},\epsilon_{\mathrm{SVD}})\mapsto
+(\calA_{\mathrm{NOT}},m,\max_t\delta_{\mathrm{tr}},\max_t\delta_{\mathrm{herm}})$;
+(iii) tensor--network resource scaling; (iv) an independent HEOM or
+reaction--coordinate benchmark; (v) threshold cross--validation;
+(vi) parameter--disorder robustness; (vii) a strong--coupling
+thermodynamic audit of drive/interaction/bath energy; and (viii) a
+non--Markovianity diagnostic (trace--distance backflow). A robust claim
+requires the same truth table and the same sign of the buffer advantage to
+survive refinement of these controls.
+
+\paragraph{Outlook.} The staged evidence is: an analytic baseline that
+reconstructs the NOT mechanism; a three--qubit GKSL surrogate that passes
+the direct and buffered truth tables; and a corrected PT--MPO/TEMPO
+structured--bath backend that also passes a calibrated truth table but with
+a small buffered margin. The project has thus entered the
+robustness--mapping stage. Heat/work claims remain provisional pending an
+explicit strong--coupling audit. The rigorous driven--dissipative
+foundation for that programme --- the periodic GKSL generator, the
+chain/MPS treatment, and the work--distinguishability conjecture --- is the
+subject of Part~\ref{part:abhishek}.
+
+% #####################################################################
+% Abhishek's part is inserted verbatim below (kept intact).
+% #####################################################################
+\clearpage
+
+\part{Abhishek: Periodically Driven Open‑System Logic Gates}
+\label{part:abhishek}
+
+\section{Introduction}
+\subsection{What is thermodynamic computing?}
+Thermodynamic computing \cite{Conte2019} proposes that the natural relaxation of a physical system coupled to heat baths can be harnessed to perform computation. In the quantum regime, autonomous thermal machines composed of a few interacting qubits can act as ``thermodynamic neurons'': logical inputs are encoded in the temperatures of finite‑size heat baths, and the logical output is read from the temperature of an auxiliary output bath once the system has settled into a nonequilibrium steady state (NESS) \cite{LipkaBartosik2024, Meier2025}. The key appeal is that such devices operate without an external clock: computation is driven entirely by the flow of heat from hot to cold reservoirs.
+
+\subsection{Why add periodic driving?}
+All existing quantum thermodynamic neurons are \emph{autonomous}, i.e., their Hamiltonians are time‑independent. In this note we ask a natural question: can one improve the speed or accuracy of a thermodynamic neuron by adding a periodic driving field? This is a form of \emph{Floquet engineering}: a periodically driven auxiliary system (the \emph{Floquet buffer}) is inserted between the logical qubits and the physical baths. The buffer acts as a tunable effective environment whose spectral density can be shaped by the drive.
+
+The price is twofold. First, the device is no longer autonomous; it requires a classical clock to maintain the drive and to read out the result stroboscopically. Second, an external work input is needed to power the drive. Nevertheless, the resulting architecture---a \emph{periodically driven dissipative logic gate}---is an interesting candidate for low‑energy computation.
+
+\subsection{Scope and structure of this note}
+This note is written as a self‑contained pedagogical resource for a collaborative project involving a theoretical physicist, a mathematician working on tensor networks, and an MSc student with a background in engineering and coding. We assume familiarity with basic quantum mechanics (Hilbert spaces, operators, partial trace, von Neumann equation) and statistical mechanics (canonical ensemble, partition function). All more advanced concepts (GKSL equation, Floquet theory, chain mapping of baths, matrix‑product states) are reviewed in the main text or in the appendices.
+
+The note is organised as follows.
+\begin{itemize}
+    \item Section~\ref{sec:background} provides concise reviews of the GKSL master equation, Floquet theory, the chain representation of bosonic baths, matrix‑product states (MPS), and the trace distance as a distinguishability measure.
+    \item Section~\ref{sec:architecture} describes the Floquet‑buffer architecture in detail.
+    \item Section~\ref{sec:weak} states and proves a theorem (Proposition~\ref{prop:periodic}) that in a certain weak‑coupling limit the logical qubits obey a time‑periodic GKSL equation.
+    \item Section~\ref{sec:nonMarkovian} explains how to go beyond weak coupling using chain mapping and MPS, and how to extract energy currents and work without exponentially large bond dimensions.
+    \item Section~\ref{sec:conjecture} proposes a conjectured work–distinguishability tradeoff.
+    \item Section~\ref{sec:numerics} outlines a staged numerical programme.
+    \item The appendices contain additional technical details.
+\end{itemize}
+
+\section{Background material}\label{sec:background}
+Here we collect, in a deliberately compact form, the mathematical tools that are essential for the rest of the note. The reader may skip this section on first reading and return as needed.
+
+\subsection{GKSL (Lindblad) master equation}\label{sec:GKSL}
+A Markovian open quantum system is described by a density matrix $\rho$ evolving under the GKSL (Gorini‑Kossakowski‑Sudarshan‑Lindblad) equation:
+\begin{equation}\label{eq:GKSL_general}
+\dot\rho = -\ii[H,\rho] + \sum_k \gamma_k \Big( L_k \rho L_k^\dagger - \tfrac12 \{ L_k^\dagger L_k, \rho \} \Big),
+\end{equation}
+where $H$ is the effective system Hamiltonian, $L_k$ are jump operators, and $\gamma_k\ge0$ are positive rates. The generator is trace‑preserving and completely positive. If the rates satisfy local detailed balance with respect to a heat bath at inverse temperature $\beta$, the system relaxes to a Gibbs state $\rho_\beta\propto\ee^{-\beta H}$ (when there is only one bath) or to a NESS when several baths are present.
+
+\subsection{Floquet theory and Floquet‑Lindblad equation}\label{sec:Floquet}
+A periodically driven system has a Hamiltonian $H(t)=H(t+T)$ with $T=2\pi/\Omega$. The time‑evolution operator can be written in terms of Floquet modes $\ket{\phi_n(t)}$ and quasi‑energies $\epsilon_n$:
+\begin{equation}
+U(t) = \sum_n \ee^{-\ii \epsilon_n t} \ket{\phi_n(t)}\bra{\phi_n(0)},
+\end{equation}
+where $\ket{\phi_n(t+T)}=\ket{\phi_n(t)}$ and $\epsilon_n\in[-\Omega/2,\Omega/2)$.
+
+When the system is open and weakly coupled to one or more baths, a Floquet‑Lindblad equation can be derived \cite{Kurizki2015, Brandner2016}. The generator becomes time‑periodic:
+\begin{equation}
+\dot\rho(t) = \mathcal{L}(t)\rho(t),\qquad \mathcal{L}(t+T)=\mathcal{L}(t).
+\end{equation}
+The jump operators are expressed in the Floquet basis, and the rates depend on the Fourier components of the bath correlation functions at frequencies shifted by multiples of $\Omega$. A crucial feature is the appearance of sidebands: transitions can occur at energies $\epsilon_m-\epsilon_n + q\Omega$, $q\in\bbZ$, which allows the system to absorb or emit quanta of the drive while exchanging energy with the baths.
+
+\subsection{Chain mapping of bosonic baths}\label{sec:chain}
+A heat bath is usually modelled as a collection of independent harmonic oscillators:
+\begin{equation}
+H_B = \int_0^\infty \d\omega\, \omega\, a_\omega^\dagger a_\omega,
+\end{equation}
+coupled to the system by $H_{SB} = A\otimes \int \d\omega\, \sqrt{J(\omega)}(a_\omega+a_\omega^\dagger)$, where $J(\omega)$ is the spectral density. For numerical purposes it is convenient to map this continuum model to a semi‑infinite one‑dimensional chain with nearest‑neighbour hopping \cite{Chin2010, Prior2010}. The transformation uses a sequence of orthogonal polynomials (e.g., Lanczos or Chebyshev) determined by $J(\omega)$. After the mapping, the Hamiltonian becomes
+\begin{equation}\label{eq:chainH}
+H_{\text{chain}} = \sum_{k=1}^\infty \omega_k a_k^\dagger a_k + \sum_{k=1}^\infty t_k (a_k^\dagger a_{k+1} + a_{k+1}^\dagger a_k),
+\end{equation}
+where $a_k$ ($k\ge1$) are new bosonic operators, and the system couples only to the first site: $H_{SB} \propto A\otimes (a_1 + a_1^\dagger)$. The parameters $\omega_k$ and $t_k$ are determined recursively from the spectral density. For an Ohmic bath $J(\omega)\propto\omega$ with a suitable cutoff, the coefficients $t_k$ decay rapidly with $k$, so that a truncation to a finite chain of length $N$ (typically $N\sim 100-200$) gives converged results for the reduced system dynamics.
+
+\subsection{Matrix‑product states (MPS) and the TDVP}\label{sec:MPS}
+A one‑dimensional quantum lattice system (such as the chain‑mapped bath) can be efficiently represented by a matrix‑product state:
+\begin{equation}
+\ket{\psi} = \sum_{\{s_i\}} C^{s_1} A^{s_2} \cdots A^{s_N} \ket{s_1 s_2 \dots s_N},
+\end{equation}
+where $C$ and $A^{s_i}$ are matrices, and the bond dimension $\chi$ controls the amount of entanglement that can be captured. The time‑dependent variational principle (TDVP) or Trotter‑Suzuki decompositions allow one to evolve the MPS in real time under a Hamiltonian $H(t)$. The computational cost scales as $O(N\chi^3 d^2)$ per time step, where $d$ is the local Hilbert space dimension.
+
+For the chain‑mapped bath at moderate temperature, the entanglement entropy between the system and the first few chain sites saturates at a finite value. Consequently, the required bond dimension $\chi$ does not grow with the chain length $N$; values of $\chi\approx 30$–$50$ are typical for converged simulations.
+
+\subsection{Trace distance as a distinguishability measure}\label{sec:trace}
+The trace distance between two density matrices $\rho$ and $\sigma$ is
+\begin{equation}
+D(\rho,\sigma) = \tfrac12 \norm{\rho-\sigma}_1,
+\end{equation}
+where $\norm{A}_1=\Tr\sqrt{A^\dagger A}$. It satisfies $0\le D(\rho,\sigma)\le 1$ and is a metric on the space of states. Operationally, $D(\rho,\sigma)$ is equal to the maximum success probability of distinguishing $\rho$ from $\sigma$ with a single measurement. We will use it to quantify the logical distinguishability: for a binary logic gate, the two possible output states $\rho_{\text{out}}^{(0)}$ and $\rho_{\text{out}}^{(1)}$ are perfectly distinguishable when $D=1$, and completely indistinguishable when $D=0$.
+
+\section{Architecture of the Floquet‑buffered logic gate}\label{sec:architecture}
+The physical device is sketched in Fig.~\ref{fig:schematic}. It consists of:
+\begin{itemize}
+    \item \textbf{Logical qubits} $\calS$, described by a time‑independent Hamiltonian $H_S$. For concreteness, in the numerical programme we will use three qubits forming a NOR gate as in \cite{LipkaBartosik2024}.
+    \item \textbf{Floquet buffer} $\calB_F$, a finite quantum system with a time‑periodic Hamiltonian $H_{\text{buf}}(t)=H_{\text{buf}}(t+T)$, $T=2\pi/\Omega$. The buffer could be, for example, a harmonic oscillator with a modulated frequency or a driven two‑level system.
+    \item \textbf{System‑buffer coupling} $H_{S\text{buf}}$, assumed time‑independent and, for the weak‑coupling theorem, weak.
+    \item \textbf{Thermal baths}, each at a different temperature $T_\alpha$, coupled only to the buffer via $H_{\text{buf},B_\alpha}$.
+\end{itemize}
+
+The logical input is encoded in the temperatures $\{T_\alpha\}$ of the baths, exactly as in the autonomous thermodynamic neuron. The output, however, is not read from an auxiliary bath; instead, we measure an observable of the output qubit stroboscopically at times $t_n=nT$, after a periodic steady state has been reached. This is a deliberate departure from strict autonomy: the device requires an external clock to synchronise the drive and the readout.
+
+The reasons for this choice are twofold. First, in the autonomous model the output bath temperature depends on the qubit‑bath coupling, which is absent in our architecture (the qubits couple only to the buffer). Second, stroboscopic readout is natural in Floquet systems and is used in many quantum computing platforms.
+
+Because we accept a clock, the thermodynamics of the device is that of a periodically driven open system. The relevant energetic quantities are the cycle‑averaged work $\overline{W}$ provided by the drive and the cycle‑averaged heat currents $\overline{J}_\alpha$ into the baths.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2cm]
+\node[draw, rectangle] (qubits) {Logical qubits $\calS$};
+\node[draw, rectangle, below of=qubits] (buffer) {Floquet buffer $\calB_F(t)$};
+\node[draw, circle, below left=1cm and 1cm of buffer] (bath1) {Bath $T_1$};
+\node[draw, circle, below right=1cm and 1cm of buffer] (bath2) {Bath $T_2$};
+\draw[->] (qubits) -- (buffer) node[midway, right] {$H_{S\rm buf}$};
+\draw[->] (buffer) -- (bath1) node[midway, left] {$H_{\rm buf, B_1}$};
+\draw[->] (buffer) -- (bath2) node[midway, right] {$H_{\rm buf, B_2}$};
+\node[right=2cm of qubits] (drive) {Periodic drive};
+\draw[->,dashed] (drive) -- (buffer);
+\end{tikzpicture}
+\caption{Periodically driven logic gate with Floquet buffer. The logical qubits interact only with the driven buffer; the buffer couples to thermal reservoirs. The device is not fully autonomous: a classical clock synchronises the drive and the stroboscopic readout.}
+\label{fig:schematic}
+\end{figure}
+
+\section{Weak‑coupling regime: periodic GKSL generator}\label{sec:weak}
+Under certain idealised conditions, one can eliminate the buffer and the baths and obtain a closed description of the logical qubits alone.
+
+\subsection{Assumptions}
+We impose:
+\begin{enumerate}[label=(A\arabic*),leftmargin=*]
+    \item \textbf{Weak buffer‑bath coupling.} The interactions $H_{\text{buf},B_\alpha}$ are sufficiently weak that the buffer, when decoupled from $\calS$, relaxes to a unique periodic steady state $\rho_{\text{buf},ss}(t)$ under the Floquet‑Lindblad equation. The generator of this buffer‑only dynamics is $\mathcal{L}_{\text{buf}}(t)$.
+    \item \textbf{Exponential decay of buffer correlations.} In that periodic steady state, the two‑time correlation functions $\langle B_i(t)B_j(t-\tau)\rangle$ decay to zero on a characteristic time scale $\tau_c$. More precisely, there exists $\tau_c$ such that $|C_{ij}(t,\tau)|<\varepsilon$ for $\tau>\tau_c$ for any chosen tolerance $\varepsilon$.
+    \item \textbf{Weak system‑buffer coupling and time‑scale separation.} The coupling $H_{S\text{buf}}$ is much weaker than the buffer’s internal relaxation scale, and the logical qubits evolve slowly compared to $\tau_c$. This allows us to apply the Born–Markov approximation.
+    \item \textbf{Secular approximation.} The Bohr frequencies (transition frequencies) of $H_S$ are non‑degenerate and well separated compared to the relaxation rates induced by the buffer.
+\end{enumerate}
+
+\subsection{Periodic GKSL generator}
+\begin{proposition}\label{prop:periodic}
+Under Assumptions (A1)–(A4), there exists a time‑periodic generator $\mathcal{L}_{\text{eff}}(t)$ of the form
+\begin{equation}
+\mathcal{L}_{\text{eff}}(t)\rho = -\ii[H_S + H_{LS}(t), \rho] + \sum_k \Gamma_k(t) \Big( L_k(t) \rho L_k^\dagger(t) - \tfrac12\{ L_k^\dagger(t)L_k(t),\rho \} \Big),
+\end{equation}
+with $\mathcal{L}_{\text{eff}}(t+T)=\mathcal{L}_{\text{eff}}(t)$, such that the reduced state of the logical qubits obeys
+\begin{equation}\label{eq:periodic_dyn}
+\dot\rho_S(t) = \mathcal{L}_{\text{eff}}(t)\rho_S(t).
+\end{equation}
+The jump operators $L_k(t)$ and rates $\Gamma_k(t)$ are obtained from the Fourier transforms of the buffer correlation functions evaluated at the Bohr frequencies of $H_S$, including sideband shifts by multiples of $\Omega$.
+\end{proposition}
+
+\paragraph{Proof sketch.}
+The derivation follows the standard Floquet–Born–Markov approach \cite{Kurizki2015}. One starts from the Nakajima–Zwanzig equation with the buffer acting as a structured environment. The memory kernel is of second order in $H_{S\text{buf}}$. Because of (A2) the kernel decays on the time scale $\tau_c$, and because of (A3) the system density matrix changes slowly on that scale; we can therefore make the Markov approximation and replace the memory integral by a time‑local superoperator. The time dependence of this superoperator is inherited from the periodic buffer steady state. The secular approximation (A4) diagonalises the dynamics in the eigenbasis of $H_S$, yielding the GKSL form with time‑periodic coefficients.
+
+\paragraph{Practical limitations.}
+The assumptions are strong. In particular, the weak‑coupling condition (A3) may be hard to satisfy simultaneously with (A1) because weak buffer‑bath coupling implies a long buffer correlation time, whereas a Markovian elimination requires the buffer correlations to decay fast \emph{relative to the qubit dynamics}. Therefore Proposition~\ref{prop:periodic} should be seen as identifying a parameter window in which a simple theoretical description exists, not as a statement about generic parameters.
+
+A second issue is the dynamic Lamb shift. The Floquet buffer will induce time‑dependent shifts $H_{LS}(t)$ in the qubit energy levels. The autonomous thermodynamic NOT gate relies on a precise resonance condition $\omega_W = \omega_X + \omega_Y$ among three qubit frequencies. The Floquet‑induced Lamb shift will generically detune this resonance and destroy the logical operation. To mitigate this, we must actively adjust the bare qubit frequencies as functions of the drive amplitude, a procedure that is realistic in circuit‑QED architectures but constitutes an additional control overhead.
+
+For all these reasons, the main numerical programme of this project targets the regime \emph{outside} the validity of Proposition~\ref{prop:periodic}, where no simple Lindbladian exists. Nevertheless, the weak‑coupling analysis is a useful conceptual starting point.
+
+\section{Non‑Markovian regime: chain mapping and MPS}\label{sec:nonMarkovian}
+To treat arbitrary coupling strengths and memory effects, we simulate the full system‑buffer‑baths compound as a closed many‑body quantum system. We employ two established techniques: chain mapping of the baths (Sec.~\ref{sec:chain}) and matrix‑product state evolution (Sec.~\ref{sec:MPS}).
+
+\subsection{Chain‑mapped Hamiltonian}
+Starting from the original bath model with a continuum of harmonic oscillators and a given spectral density $J(\omega)$, we apply a unitary transformation (Lanczos or orthogonal‑polynomial mapping) that yields the chain Hamiltonian \eqref{eq:chainH}. The total Hamiltonian in the chain picture is
+\begin{equation}\label{eq:total_chain}
+\begin{aligned}
+H_{\text{tot}}(t) &= H_S \;+\; H_{\text{buf}}(t) \;+\; H_{S\text{buf}} \\
+&\quad + \sum_{\alpha} \Big[ \sum_{k=1}^{N_\alpha} \omega_{\alpha k} a_{\alpha k}^\dagger a_{\alpha k}
+   + \sum_{k=1}^{N_\alpha-1} t_{\alpha k} (a_{\alpha k}^\dagger a_{\alpha,k+1} + \text{h.c.}) \Big] \\
+&\quad + \sum_{\alpha} V_{\text{buf},\alpha} \otimes (a_{\alpha 1} + a_{\alpha 1}^\dagger).
+\end{aligned}
+\end{equation}
+Here $N_\alpha$ is the chain length for bath $\alpha$ (chosen large enough to suppress finite‑size effects), and $V_{\text{buf},\alpha}$ is a buffer operator determined by the original buffer‑bath coupling.
+
+This Hamiltonian describes a one‑dimensional lattice system. The logical qubits sit at the leftmost end, the buffer is next, and each bath forms a separate chain. The only interaction between qubits and baths is mediated by the buffer: the qubits couple to the buffer, and the buffer couples to the first site of each chain.
+
+\subsection{Energy current and work}
+Because the chain Hamiltonian is a closed system, thermodynamic observables can be defined exactly from the Heisenberg equations of motion.
+
+The energy current from the logical qubits into the buffer is the time derivative of the qubit energy minus the contribution that would occur without the coupling:
+\begin{equation}\label{eq:current_def}
+J_{S\to\text{buf}}(t) = \ii\big\langle [H_S,\, H_{S\text{buf}}] \big\rangle.
+\end{equation}
+Here $\langle\cdot\rangle = \Tr(\rho_{\text{tot}}(t)\cdot)$, with $\rho_{\text{tot}}$ the state of the full chain. Because $H_S$ acts only on the qubits and $H_{S\text{buf}}$ acts on qubits and buffer, the commutator is a local operator with support on the qubits and the buffer alone. Its expectation value can therefore be computed directly from the MPS representation of the state without needing to reconstruct the full bath density matrix.
+
+The power injected by the periodic drive is
+\begin{equation}\label{eq:power_def}
+P_{\text{drive}}(t) = \Big\langle \frac{\partial H_{\text{buf}}(t)}{\partial t} \Big\rangle.
+\end{equation}
+This is also a local observable (it acts only on the buffer). The cycle‑averaged work is
+\begin{equation}
+\overline{W} = \frac1T \int_0^T P_{\text{drive}}(t)\,\d t.
+\end{equation}
+
+The heat dumped into bath $\alpha$ can be obtained from the energy current flowing from the buffer into the first site of chain $\alpha$, using the buffer‑chain coupling. This current is again a local observable.
+
+\subsection{Bond‑dimension control}
+A crucial practical question is whether the MPS simulation remains tractable. For a one‑dimensional chain with nearest‑neighbour couplings, the entanglement entropy of the state follows an area law: for a gapped system it saturates to a constant; for a critical (gapless) system it grows logarithmically with the chain length. The chain‑mapped bath is gapless (the site frequencies $\omega_k$ extend to zero), but the coupling $t_k$ decays rapidly with $k$, so that only the first few tens of sites are strongly entangled with the system.
+
+In practice, for an Ohmic spectral density with a high‑frequency cutoff and for temperatures $k_B T$ above the smallest energy scale of the chain, the bond dimension required for convergence is $\chi \approx 30$–$50$. This value does \emph{not} increase when the chain length $N$ is increased beyond the point where the first few sites have captured the relevant physics. The computational cost per time step then scales as $O(N\chi^3 d^2)$, where $d$ is the local Hilbert space dimension. For a truncated Fock space with $d=10$–$20$, this is manageable for the single‑qubit buffer prototype (Phase~3 of the numerical programme) and, with tree‑tensor‑network (TTN) enhancements, for the three‑qubit gate (Phase~4).
+
+\section{Conjectured work–distinguishability tradeoff}\label{sec:conjecture}
+In the autonomous thermodynamic neuron, logical distinguishability is intrinsically linked to the temperature difference between the baths; increasing the distinguishability requires a larger temperature gradient, which implies larger entropy production. In our driven setting, we expect a similar tradeoff: improving the logical distinguishability beyond the undriven baseline should require a positive amount of work per cycle.
+
+Formally, let
+\begin{equation}
+P_{\text{dist}} = \tfrac12 \norm{ \rho_{\text{out}}^{(0)} - \rho_{\text{out}}^{(1)} }_1
+\end{equation}
+be the trace‑distance distinguishability of the output qubit states corresponding to the two logical inputs. Let $P_{\text{dist}}^{(0)}$ be this quantity when the buffer is undriven (i.e., the baseline autonomous gate, but with the same qubit readout), and let $\overline{W}$ be the cycle‑averaged work when the buffer is driven.
+
+\begin{conjecture}[Work–distinguishability tradeoff]\label{conj:tradeoff}
+There exists a monotonically increasing function $f$ with $f(P_{\text{dist}}^{(0)})=0$ such that
+\begin{equation}
+\overline{W} \ge f(P_{\text{dist}}).
+\end{equation}
+In particular, any enhancement $P_{\text{dist}} > P_{\text{dist}}^{(0)}$ requires $\overline{W}>0$.
+\end{conjecture}
+
+This conjecture is motivated by known thermodynamic uncertainty relations (TURs) and speed‑limit inequalities, which bound the precision of a process in terms of the entropy production or work. The precise functional form of $f$ and its dependence on the bath temperatures are open questions that the numerical programme will explore.
+
+\section{Numerical programme}\label{sec:numerics}
+We propose a staged numerical investigation, designed to proceed from controlled to more challenging regimes.
+
+\paragraph{Phase 1: Undriven baseline.}
+Reproduce the autonomous NOT gate of \cite{LipkaBartosik2024} using QuTiP. However, instead of reading the output from a bath temperature, we read it from the reduced state of a designated output qubit. This gives us the undriven distinguishability $P_{\text{dist}}^{(0)}$ and the baseline steady‑state heat currents.
+
+\paragraph{Phase 2: Weak‑coupling Floquet buffer (QuTiP).}
+Implement a single qubit coupled to a driven harmonic oscillator (the buffer), which is weakly coupled to two Ohmic baths. Use QuTiP’s Floquet‑Lindblad module to numerically verify Proposition~\ref{prop:periodic}. Explore how $P_{\text{dist}}$ and $\overline{W}$ depend on drive amplitude and frequency. Check whether the conjecture holds in this regime.
+
+\paragraph{Phase 3: MPS chain simulation (single qubit).}
+Build the chain‑mapped model of one qubit, one driven buffer, and two thermal chains using ITensor or MPSDynamics.jl. Initialise the chains in thermal states (via thermofield purification). Evolve in time until the periodic steady state is reached, then compute the energy current \eqref{eq:current_def}, the drive power \eqref{eq:power_def}, and the output qubit distinguishability. Investigate parameter regimes where the weak‑coupling assumptions fail, and test the conjecture beyond weak coupling.
+
+\paragraph{Phase 4: Three‑qubit NOR gate.}
+Extend the chain mapping to the full three‑qubit NOR gate with a single Floquet buffer. Here the bond dimension may grow; if it becomes prohibitive, we will use tree tensor networks (TTNs) or systematic truncation of the least‑coupled chain sites. The goal is to produce a phase diagram of $P_{\text{dist}}$ as a function of drive amplitude and frequency, and to test the conjecture for a practical logic gate.
+
+All code and data will be made publicly available to facilitate reproducibility.
+
+\section{Conclusion}
+We have presented a self‑contained, pedagogical introduction to the Floquet‑buffer architecture for periodically driven logic gates. The note reviews the necessary technical background, states a rigorous theorem in the weak‑coupling limit, explains how to treat the non‑Markovian regime with chain‑mapped MPS, and formulates a clear conjecture to be tested numerically. The project is designed to utilise the complementary strengths of the collaboration: the physicist’s formal analysis, the mathematician’s tensor‑network expertise, and the student’s numerical skills. This note is the definitive starting point for the work.
+
+\begin{appendices}
+\section{Derivation of the GKSL equation from a microscopic model}
+For completeness we sketch the derivation of the GKSL equation \eqref{eq:GKSL_general} from a system‑bath Hamiltonian. Consider a system $S$ coupled to a bath $B$ via $H_{SB}= \sum_i S_i\otimes B_i$. In the Born–Markov approximation, after tracing out the bath, one obtains the Redfield equation. The additional secular (rotating‑wave) approximation diagonalises the dynamics in the eigenbasis of $H_S$ and ensures complete positivity. The resulting jump operators are the eigenoperators $A(\omega)$ of the system Hamiltonian, with rates $\gamma(\omega)= \int e^{i\omega t}\langle B^\dagger(t)B(0)\rangle dt$. The detailed balance condition $\gamma(-\omega)=e^{-\beta\omega}\gamma(\omega)$ follows from the KMS condition of the bath. See \cite{Breuer2002} for a textbook treatment.
+
+\section{Chain mapping: recurrence relations}
+Given a spectral density $J(\omega)$, the chain mapping is constructed by orthogonalising the polynomials in $\omega$ with respect to the measure $J(\omega)d\omega$. The recurrence coefficients $\omega_k$ and $t_k$ are obtained from the continued fraction expansion of the bath correlation function. For the common case of an Ohmic bath with exponential cutoff, $J(\omega)= \eta\omega e^{-\omega/\omega_c}$, the coefficients can be computed analytically or numerically using the Lanczos algorithm \cite{Chin2010}.
+
+\section{MPS representation of a thermal state}
+To initialise the chain in a thermal state at temperature $T$, one uses the thermofield (purification) approach. Each physical bosonic site is doubled into an ancilla site, and the initial state is the vacuum for a set of Bogoliubov‑transformed modes. The resulting MPS bond dimension is directly related to the effective temperature; for moderate $T$, it remains small.
+
+\section{Energy current operator: explicit form}
+Equation \eqref{eq:current_def} follows from the Heisenberg equation for $H_S$:
+\begin{equation}
+\frac{d H_S}{dt} = \ii[ H_{\text{tot}}, H_S ] = \ii[ H_S, H_{S\text{buf}} ] + \ii[ H_S, H_S ] = \ii[ H_S, H_{S\text{buf}} ].
+\end{equation}
+The term $[H_S, H_S]=0$, and $H_S$ commutes with all bath and buffer‑bath Hamiltonians because it acts on a different tensor factor. Hence the energy change of the qubits is solely due to the qubit‑buffer interaction. Taking the expectation value gives the current.
+\end{appendices}
+
+\clearpage
+\begin{thebibliography}{99}
+\bibitem{LipkaBartosik2024} P.~Lipka--Bartosik, M.~Perarnau--Llobet, and
+N.~Brunner, ``Thermodynamic computing via autonomous quantum thermal
+machines,'' \emph{Sci.\ Adv.} \textbf{10}, eadm8792 (2024);
+arXiv:2308.15905.
+
+\bibitem{BrunnerVirtual2012} N.~Brunner, N.~Linden, S.~Popescu, and
+P.~Skrzypczyk, ``Virtual qubits, virtual temperatures, and the
+foundations of thermodynamics,'' \emph{Phys.\ Rev.\ E} \textbf{85},
+051117 (2012).
+
+\bibitem{Breuer2002} H.-P.~Breuer and F.~Petruccione, \emph{The Theory of
+Open Quantum Systems}, Oxford University Press (2002).
+
+\bibitem{Pollock2018} F.~A.~Pollock \emph{et al.}, ``Non-Markovian quantum
+processes: complete framework and efficient characterization,''
+\emph{Phys.\ Rev.\ A} \textbf{97}, 012127 (2018).
+
+\bibitem{Strathearn2018} A.~Strathearn, P.~Kirton, D.~Kilda, J.~Keeling,
+and B.~W.~Lovett, ``Efficient non-Markovian quantum dynamics using
+time-evolving matrix product operators,'' \emph{Nat.\ Commun.} \textbf{9},
+3322 (2018).
+
+\bibitem{Grifoni1998} M.~Grifoni and P.~H\"anggi, ``Driven quantum
+tunneling,'' \emph{Phys.\ Rep.} \textbf{304}, 229 (1998).
+
+\bibitem{Conte2019} T.~Conte et al., “Thermodynamic Computing,” arXiv:1911.01968 (2019).
+
+\bibitem{Meier2025} F.~Meier, S.~Huber, P.~Erker, and A.~Xuereb, “Autonomous Quantum Processing Unit,” arXiv:2501.15615 (2025).
+
+\bibitem{Kurizki2015} D.~Gelbwaser-Klimovsky, W.~Niedenzu, and G.~Kurizki, “Thermodynamics of quantum systems under dynamical control,” Adv.\ At.\ Mol.\ Opt.\ Phys.\ \textbf{64}, 329 (2015).
+
+\bibitem{Brandner2016} K.~Brandner and U.~Seifert, “Periodic thermodynamics of open quantum systems,” Phys.\ Rev.\ E \textbf{93}, 062134 (2016).
+
+\bibitem{Chin2010} A.~W.~Chin, \'{A}.~Rivas, S.~F.~Huelga, and M.~B.~Plenio, “Exact mapping between system‑reservoir quantum models and semi‑infinite discrete chains,” J.\ Math.\ Phys.\ \textbf{51}, 092109 (2010).
+
+\bibitem{Prior2010} J.~Prior, A.~W.~Chin, S.~F.~Huelga, and M.~B.~Plenio, “Efficient simulation of strong system‑environment interactions,” Phys.\ Rev.\ Lett.\ \textbf{105}, 050404 (2010).
+
+\bibitem{Wolpert2022} D.~H.~Wolpert, “Stochastic thermodynamics of computation,” J.\ Stat.\ Phys.\ \textbf{187}, 10 (2022).
+
+\bibitem{TienGordon1963} P.~K.~Tien and J.~P.~Gordon, ``Multiphoton Process Observed in the Interaction of Microwave Fields with the Tunneling between Superconductor Films,'' Phys.\ Rev.\ \textbf{129}, 647 (1963).
+
+\bibitem{OQuPy} G.~E.~Fux, D.~Kilda, B.~W.~Lovett, and J.~Keeling, “OQuPy: A Python package to efficiently simulate non‑Markovian open quantum systems,” J.\ Chem.\ Phys.\ \textbf{161}, 124108 (2024).
+
+\bibitem{QuTiP}
+J. R. Johansson, P. D. Nation, and F. Nori,
+``QuTiP: An open-source Python framework for the dynamics of open quantum systems,''
+\textit{Computer Physics Communications},
+vol. 183, no. 8, pp. 1760--1772, Aug. 2012.
+DOI: \url{https://doi.org/10.1016/j.cpc.2012.02.021}.
+\end{thebibliography}
+
+\end{document}

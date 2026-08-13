@@ -1,0 +1,424 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,braket}
+\usepackage{physics}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{array}
+
+\title{From Thermodynamic Neurons to Floquet-Buffered Non-Markovian Logic Gates}
+\author{Implementation and Theory Bridge}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note explains how the current codebase connects to the proposed research idea.  The
+baseline thermodynamic-neuron paper is first reconstructed in the Markovian reset model.
+The extension then asks what changes when the bath is structured, has memory, and is not
+directly attached to the logical qubit.  The proposed answer is to insert a periodically driven
+Floquet buffer between the logical subsystem and the environment.  The buffer acts as a
+dynamical filter and isolation layer.  Since direct simulation of a many-qubit system plus
+structured reservoirs grows exponentially, the environmental memory is represented as a
+tensor network, specifically a process tensor or PT-MPO.  The operational output is not an
+abstract current alone, but a measurable logical distinguishability of output states.
+\end{abstract}
+
+\section{What Has Already Been Reconstructed}
+
+The first completed part of the project is the Markovian baseline thermodynamic neuron.
+This corresponds to the weak-coupling, reset-model picture of the baseline paper.  In this
+model, logical inputs are encoded as inverse temperatures of thermal reservoirs, and the
+output is encoded in the final inverse temperature of a finite reservoir.
+
+The basic thermal occupation of a qubit with energy gap $\epsilon$ is
+\begin{equation}
+    g(\beta \epsilon)
+    =
+    \frac{1}{1 + e^{\beta \epsilon}}.
+\end{equation}
+
+For the three-qubit collector of the NOT gate, the virtual inverse temperature is
+\begin{equation}
+    \beta_v
+    =
+    \frac{\epsilon_0}{\epsilon_z}\beta_0
+    -
+    \frac{\epsilon_1}{\epsilon_z}\beta_1,
+    \qquad
+    \epsilon_z = \epsilon_0 - \epsilon_1.
+\end{equation}
+
+The reset-model collector and modulator currents are
+\begin{align}
+    j_C
+    &=
+    \mu \epsilon_z
+    \left[
+        g_z(\beta_z) - g_z(\beta_v)
+    \right],
+    \\
+    j_M
+    &=
+    \mu' \epsilon_z
+    \left[
+        g_z(\beta_z) - g_z(\beta_r)
+    \right].
+\end{align}
+Here $g_z(\beta) = g(\beta \epsilon_z)$.  The finite output reservoir evolves as
+\begin{equation}
+    \dot{\beta}_z(t)
+    =
+    -
+    \frac{\beta_z(t)^2}{C}
+    \left[
+        j_C + j_M
+    \right].
+\end{equation}
+
+The code in \texttt{Scripts/baseline\_paper\_reconstruction/} implements this model and
+generates the baseline NOT, NOR, 3-majority, and XOR responses.  This is the reference point:
+every extension must be compared against it.
+
+\section{Why The Baseline Is Not The Final Theory}
+
+The baseline model is clean because the bath is memoryless.  The system state $\rho_S(t)$
+evolves using only its current value:
+\begin{equation}
+    \dot{\rho}_S(t)
+    =
+    \mathcal{L}\rho_S(t).
+\end{equation}
+This is a Markovian GKSL-type picture.  It assumes weak system-bath coupling, rapid bath
+correlation decay, and no long-lived information returning from the reservoir.
+
+For a structured bath, this is no longer safe.  The bath may remember what the system did
+earlier.  Then the reduced dynamics has a memory kernel:
+\begin{equation}
+    \dot{\rho}_S(t)
+    =
+    -i[H_S,\rho_S(t)]
+    +
+    \int_0^t
+    \mathcal{K}(t-\tau)\rho_S(\tau)\,d\tau.
+\end{equation}
+This is the Nakajima--Zwanzig form.  It says, in plain language, that the present motion of the
+system depends on its past.  The object $\mathcal{K}(t-\tau)$ is the memory kernel.  When
+the bath memory is very short, the kernel becomes sharply peaked and one recovers the
+ordinary Markovian equation.  When the memory is long, the Markovian approximation may
+miss revivals, backflow, and modified relaxation.
+
+This is why the project cannot jump directly from the reset-model baseline to a strong claim
+about non-Markovian thermodynamic gates.  First one must show that the non-Markovian
+solver is stable and that the chosen observable is meaningful.
+
+\section{The Floquet Buffer Idea}
+
+The proposed architecture inserts a driven intermediate system between the logical subsystem
+and the bath:
+\begin{equation}
+    S \longleftrightarrow F(t) \longleftrightarrow B.
+\end{equation}
+The direct architecture is
+\begin{equation}
+    S \longleftrightarrow B.
+\end{equation}
+
+Here $S$ is the logical subsystem, $F(t)$ is the periodically driven Floquet buffer, and $B$ is
+the bath.  A minimal buffer Hamiltonian is
+\begin{equation}
+    H_F(t)
+    =
+    \frac{\epsilon_F}{2}\sigma_z
+    +
+    A\cos(\Omega t)\sigma_x,
+\end{equation}
+with period
+\begin{equation}
+    T = \frac{2\pi}{\Omega}.
+\end{equation}
+The logical qubit-buffer interaction can be chosen as
+\begin{equation}
+    H_{SF}
+    =
+    g_{SF}\,
+    \sigma_x^{(S)}\otimes\sigma_x^{(F)}.
+\end{equation}
+
+The complete minimal bridge Hamiltonian is therefore
+\begin{equation}
+    H(t)
+    =
+    H_S
+    +
+    H_F(t)
+    +
+    H_{SF}
+    +
+    H_B
+    +
+    H_{FB}.
+\end{equation}
+
+The physical role of the buffer is simple:
+\begin{itemize}[leftmargin=2em]
+    \item it prevents the logical qubit from touching the bath directly;
+    \item it creates drive-controlled sidebands at frequencies shifted by multiples of $\Omega$;
+    \item it can suppress unwanted transitions and enhance desired transitions;
+    \item it gives a possible gain/isolation stage, analogous in spirit to a CMOS inverter.
+\end{itemize}
+
+In a weak Markovian treatment of the buffer-bath contact, one obtains a time-periodic
+effective generator
+\begin{equation}
+    \dot{\rho}_S(t)
+    =
+    \mathcal{L}_{\mathrm{eff}}(t)\rho_S(t),
+    \qquad
+    \mathcal{L}_{\mathrm{eff}}(t+T)
+    =
+    \mathcal{L}_{\mathrm{eff}}(t).
+\end{equation}
+The transition rates depend on bath correlations evaluated at shifted frequencies
+\begin{equation}
+    \omega + n\Omega,
+\end{equation}
+where $n\in\mathbb{Z}$.  This is the origin of Floquet filtering.
+
+\section{What The Current Floquet Code Does}
+
+The code in \texttt{Scripts/floquet\_buffer\_extension/} implements the first bridge model:
+\begin{equation}
+    S \longleftrightarrow F(t) \longleftrightarrow B.
+\end{equation}
+It compares this against the direct baseline
+\begin{equation}
+    S \longleftrightarrow B.
+\end{equation}
+
+For two different initial logical states, $\rho_S^{(0)}(0)$ and $\rho_S^{(1)}(0)$, the code evolves
+the output states and computes the trace distance
+\begin{equation}
+    D(t)
+    =
+    \frac{1}{2}
+    \norm{
+        \rho_S^{(0)}(t)
+        -
+        \rho_S^{(1)}(t)
+    }_1.
+\end{equation}
+This is the operational distinguishability of the two logical outputs.  If $D=1$, the states are
+perfectly distinguishable.  If $D=0$, they are indistinguishable.
+
+The code also estimates the work injected by the drive through
+\begin{equation}
+    W_{\mathrm{drive}}
+    =
+    \int_0^{t_f}
+    \Tr\left[
+        \rho(t)
+        \frac{\partial H_F(t)}{\partial t}
+    \right]dt.
+\end{equation}
+For
+\begin{equation}
+    H_F(t)
+    =
+    \frac{\epsilon_F}{2}\sigma_z
+    +
+    A\cos(\Omega t)\sigma_x,
+\end{equation}
+we have
+\begin{equation}
+    \frac{\partial H_F(t)}{\partial t}
+    =
+    -
+    A\Omega\sin(\Omega t)\sigma_x.
+\end{equation}
+
+The first default run gives
+\begin{align}
+    D_{\mathrm{direct}}(t_f)
+    &\approx
+    0.135,
+    \\
+    D_{\mathrm{buffer}}(t_f)
+    &\approx
+    0.182,
+    \\
+    W_{\mathrm{drive}}
+    &\approx
+    0.460.
+\end{align}
+Thus the first parameter set shows the intended trade-off:
+\begin{equation}
+    \text{better output distinguishability}
+    \quad
+    \text{at the cost of positive drive work.}
+\end{equation}
+
+\section{Why Tensor Networks Are Needed}
+
+If one explicitly simulates the system plus bath, the Hilbert space grows exponentially.  Suppose
+the system has dimension $d_S$ and the bath is represented by $N$ local sites of dimension $d$.
+The full state dimension is
+\begin{equation}
+    d_S d^N.
+\end{equation}
+This is impossible for large $N$.
+
+For non-Markovian open systems, the difficulty can also be seen in time.  A bath with memory
+couples the system at time $t_k$ to its earlier states at times $t_j$.  Naively, storing all multi-time
+correlations scales exponentially with the number of time steps.
+
+The process tensor solves this by representing the environment's influence as a tensor network:
+\begin{equation}
+    \Upsilon_{n:0}
+    =
+    \sum_{\{\alpha_k,\beta_k\}}
+    \Tr\left[
+        B^{[n-1]}_{\alpha_{n-1},\beta_{n-1}}
+        \cdots
+        B^{[0]}_{\alpha_0,\beta_0}
+    \right]
+    \ket{\alpha_{n-1}\cdots\alpha_0}
+    \bra{\beta_{n-1}\cdots\beta_0}.
+\end{equation}
+This is a matrix product operator along the time direction.  Its internal bond dimension
+$\chi$ measures how much memory must be carried from the past to the future.
+
+If the bath is Markovian, then
+\begin{equation}
+    \chi = 1.
+\end{equation}
+If the bath is non-Markovian but compressible, then
+\begin{equation}
+    1 < \chi \ll d^{2n}.
+\end{equation}
+This is the key reason tensor networks prevent exponential blow-up: the full memory object
+is not stored exactly as an exponentially large tensor; it is compressed by singular value
+decomposition while keeping the physically important temporal correlations.
+
+\section{Single Example: From Nakajima--Zwanzig To Output Logic}
+
+Consider one logical qubit coupled to a structured bath through a Floquet buffer:
+\begin{equation}
+    S \longleftrightarrow F(t) \longleftrightarrow B.
+\end{equation}
+
+\subsection*{Step 1: Exact Reduced Dynamics}
+
+The full density matrix obeys
+\begin{equation}
+    \dot{\rho}_{SFB}(t)
+    =
+    -i[H_{SFB}(t),\rho_{SFB}(t)].
+\end{equation}
+The reduced logical state is
+\begin{equation}
+    \rho_S(t)
+    =
+    \Tr_{FB}\rho_{SFB}(t).
+\end{equation}
+
+\subsection*{Step 2: Memory Kernel View}
+
+Tracing out the buffer and bath gives a memory equation
+\begin{equation}
+    \dot{\rho}_S(t)
+    =
+    -i[H_S,\rho_S(t)]
+    +
+    \int_0^t
+    \mathcal{K}_F(t,\tau)\rho_S(\tau)d\tau.
+\end{equation}
+The kernel now depends on the driven buffer.  By tuning $A$ and $\Omega$, one changes
+$\mathcal{K}_F$ and therefore changes how information leaves or returns to the logical qubit.
+
+\subsection*{Step 3: Tensor Network Representation}
+
+Instead of explicitly constructing $\mathcal{K}_F$, the process-tensor method builds the
+multi-time influence object $\Upsilon_{n:0}$.  The simulation then contracts the logical system
+operations with this environment tensor network:
+\begin{equation}
+    \rho_S(t_n)
+    =
+    \Upsilon_{n:0}
+    \star
+    \left(
+        \mathcal{A}_{n-1}
+        \otimes
+        \cdots
+        \otimes
+        \mathcal{A}_0
+    \right),
+\end{equation}
+where $\star$ means tensor contraction and $\mathcal{A}_k$ are the system operations at each
+time step.
+
+\subsection*{Step 4: Logical Output}
+
+For a binary gate, prepare two input states and evolve them:
+\begin{equation}
+    \rho_S^{(0)}(0)
+    \rightarrow
+    \rho_S^{(0)}(t_f),
+    \qquad
+    \rho_S^{(1)}(0)
+    \rightarrow
+    \rho_S^{(1)}(t_f).
+\end{equation}
+The logical distinguishability is
+\begin{equation}
+    D_{\mathrm{out}}
+    =
+    \frac{1}{2}
+    \norm{
+        \rho_S^{(0)}(t_f)
+        -
+        \rho_S^{(1)}(t_f)
+    }_1.
+\end{equation}
+The Floquet buffer is useful only if it improves $D_{\mathrm{out}}$ or improves robustness at an
+acceptable drive cost.
+
+\section{How The Codebase Now Maps To The Theory}
+
+\begin{center}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\linewidth}
+                >{\raggedright\arraybackslash}p{0.36\linewidth}
+                >{\raggedright\arraybackslash}p{0.28\linewidth}}
+\hline
+Theory object & Code location & Purpose \\
+\hline
+Baseline reset model
+& baseline reconstruction folder
+& Markovian thermodynamic neuron \\
+Structured bath benchmark
+& non-Markovian extension folder
+& OQuPy/PT-MPO calibration \\
+Floquet buffer bridge
+& Floquet-buffer extension folder
+& Test driven isolation layer \\
+Convergence scans
+& non-Markovian outputs folder
+& Verify numerical stability \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Next Scientific Step}
+
+The next step is not to claim that the full thermodynamic gate has been solved.  The next step is
+to connect the Floquet-buffer bridge to the non-Markovian machinery:
+\begin{equation}
+    S \longleftrightarrow F(t) \longleftrightarrow B_{\mathrm{structured}},
+\end{equation}
+with the structured bath represented by a process tensor or chain mapping.  The first target
+should remain a single logical qubit.  Only after this is stable should the full three-qubit NOT
+or NOR thermodynamic neuron be attempted.
+
+\end{document}

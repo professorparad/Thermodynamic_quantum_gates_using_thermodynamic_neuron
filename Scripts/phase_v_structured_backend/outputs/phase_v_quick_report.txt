@@ -1,0 +1,15 @@
+Phase V PT-MPO/TEMPO structured-bath truth-table report
+=======================================================
+
+Status:
+This replaces the output bath by an OQuPy TEMPO/PT-MPO structured-bath backend while preserving the same NOT truth-table decoder. The buffered case treats output qubit + driven Floquet buffer as the system and couples the structured bath to the buffer.
+
+Summary:
+- pt_mpo_direct_output: accuracy=1.000 (2/2), D_final=0.007111, trace_dev=2.224e-06, herm_err=6.094e-07
+- pt_mpo_floquet_buffered_output: accuracy=1.000 (2/2), D_final=0.000001, trace_dev=1.713e-06, herm_err=3.774e-15
+
+Truth table:
+- pt_mpo_direct_output, input=0 -> decoded=1 (expected=1), beta_eff=1.427973, threshold=1.285153, margin=1.428e-01, correct=True
+- pt_mpo_floquet_buffered_output, input=0 -> decoded=1 (expected=1), beta_eff=1.481572, threshold=1.481546, margin=2.598e-05, correct=True
+- pt_mpo_direct_output, input=1 -> decoded=0 (expected=0), beta_eff=1.142333, threshold=1.285153, margin=1.428e-01, correct=True
+- pt_mpo_floquet_buffered_output, input=1 -> decoded=0 (expected=0), beta_eff=1.481520, threshold=1.481546, margin=2.598e-05, correct=True

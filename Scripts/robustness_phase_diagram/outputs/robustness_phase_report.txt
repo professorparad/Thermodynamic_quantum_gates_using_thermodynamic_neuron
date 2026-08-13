@@ -1,0 +1,19 @@
+Floquet-buffer robustness phase-diagram report
+================================================
+
+This is a GKSL strong-coupling surrogate phase map for the three-qubit thermodynamic NOT architecture. It complements, but does not replace, the Phase V PT-MPO/TEMPO structured-bath backend.
+
+Robust margin threshold: 0.050000
+Total points: 80
+Robust pass points: 68
+Fragile pass points: 0
+Fail points: 12
+
+Best buffered margin:
+- A=0.0, g_SF=0.0, scale=1.5, margin=0.499961, accuracy=1.000
+
+Best buffered-minus-direct margin gain:
+- A=0.0, g_SF=0.0, scale=2.0, gain=0.000040, work_proxy=0.000000
+
+Interpretation:
+The three phases are fail, fragile pass, and robust pass. A pass is fragile when the NOT truth table is correct but the minimum thermal decoder margin is below the chosen threshold. This is the same distinction used in CMOS noise-margin analysis: correctness at a point is weaker than a separated logic level.

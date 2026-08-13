@@ -1,0 +1,20 @@
+Floquet-buffer ablation study
+=============================
+
+Rows evaluated: 9
+Purpose: isolate which physical ingredient drives the distinguishability gain: periodic drive, system-buffer coupling, and buffer-bath contact.
+
+Default full-buffer case:
+- gain=0.083551, work=0.176530, buffered D=0.320480
+
+Drive ablation:
+- no-drive gain=-0.149461; if this is below the driven cases, the periodic modulation is doing real work rather than the buffer acting as a passive spacer.
+
+Best absolute trace-distance gain:
+- weak_system_buffer_coupling: gain=0.711315, work=-0.019354
+
+Best gain per absolute drive-work proxy:
+- weak_system_buffer_coupling: gain/|work|=36.752860, gain=0.711315
+
+Interpretation caveat:
+This ablation is still a Markovian buffer-bath bridge. It supports or rejects design choices, but full thermodynamic heat/work claims require an explicit bath or reaction-coordinate audit.

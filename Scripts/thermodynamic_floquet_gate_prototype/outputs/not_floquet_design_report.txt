@@ -1,0 +1,26 @@
+Thermodynamic Floquet NOT-gate prototype design report
+======================================================
+
+This is a screening report that combines the baseline analytical NOT response with the current Floquet-buffer bridge metric.
+
+Best epsilon1 by combined score: 20.0
+Baseline output margin: 0.999908
+Floquet trace-distance gain: 0.046438
+Drive-work proxy: 0.460415
+Combined screening score: 0.046434
+
+Best ablation-supported optimistic setting:
+- epsilon1=20.0
+- ablation case=weak_system_buffer_coupling
+- optimistic score=0.711249
+
+Recommended epsilon1 values for first full-gate attempt:
+- epsilon1=5.0
+- epsilon1=10.0
+- epsilon1=20.0
+
+Next programming task:
+Implement a minimal NOT gate with one structured output bath and compare direct versus Floquet-buffered output distinguishability. Keep heat/work claims provisional until the thermodynamic audit is implemented.
+
+Mathematical audit rule:
+Use trace distance and logical output margin as thesis-safe evidence. Use drive work as a proxy until explicit bath-energy accounting is added.

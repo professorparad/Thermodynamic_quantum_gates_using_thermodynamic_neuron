@@ -1,0 +1,9 @@
+Phase 3 convergence report
+==========================
+
+NOT CONVERGED: last two runs differ by 4.234e-03, above tolerance 1.0e-03. Increase memory_time, reduce dt, and tighten svd_tolerance.
+
+Rows:
+- dt=0.25, memory=0.5, tol=0.0001, t_end=1.0, final_sigma_z=0.70950198, step_drift=0.000e+00, runtime=0.11s
+- dt=0.2, memory=0.6, tol=1e-05, t_end=1.0, final_sigma_z=0.70612976, step_drift=3.372e-03, runtime=0.27s
+- dt=0.1, memory=0.8, tol=1e-05, t_end=1.0, final_sigma_z=0.70189574, step_drift=4.234e-03, runtime=0.75s

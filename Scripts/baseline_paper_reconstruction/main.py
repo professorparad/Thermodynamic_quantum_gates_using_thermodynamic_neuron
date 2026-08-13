@@ -84,7 +84,7 @@ def main():
         [
             "epsilon1",
             "average_error",
-            "dissipation_proxy",
+            "average_entropy_production",
             "beta_out_hot_input",
             "beta_out_cold_input",
         ],
@@ -149,7 +149,7 @@ def main():
     print(f"Saved Fig. 7 plot: {majority_plot}")
     print(f"Saved Fig. 8 CSV: {xor_csv}")
     print(f"Saved Fig. 8 plot: {xor_plot}")
-    print("Models: virtual-temperature regimes, NOT, trade-off proxy, NOR, majority, XOR network.")
+    print("Models: virtual-temperature regimes, NOT, reset entropy, NOR, majority, XOR network.")
 
 
 if __name__ == "__main__":

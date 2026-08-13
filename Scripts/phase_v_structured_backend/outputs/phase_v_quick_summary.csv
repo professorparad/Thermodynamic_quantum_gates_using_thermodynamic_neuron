@@ -1,0 +1,3 @@
+architecture,truth_table_correct,truth_table_total,truth_table_accuracy,final_trace_distance,max_trace_deviation,max_hermiticity_error,elapsed_seconds_total
+pt_mpo_direct_output,2,2,1.0,0.007110756471112053,2.2244708636209864e-06,6.094261247951237e-07,0.7840311769978143
+pt_mpo_floquet_buffered_output,2,2,1.0,1.0401447606265119e-06,1.713083480625599e-06,3.774396399966977e-15,70.91741642000852

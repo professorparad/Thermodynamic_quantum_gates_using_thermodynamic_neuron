@@ -1,0 +1,2 @@
+regime,zeta,max_trace_deviation,max_hermiticity_error,final_purity,final_sigma_z,elapsed_seconds,dt,memory_time,svd_tolerance
+ohmic,1.0,7.344592214408863e-07,5.257594004181636e-15,0.7939596248536632,0.7667590703525216,0.5029655460020876,0.2,0.6,1e-05

@@ -123,17 +123,17 @@ def plot_fig6_nor_surface(rows, output_path, beta_hot, beta_cold):
 
 
 def plot_fig3c_tradeoff(rows, output_path):
-    """Plot error versus dissipation proxy for the NOT gate."""
+    """Plot error versus reset-model entropy production for the NOT gate."""
 
     import matplotlib.pyplot as plt
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    rows = sorted(rows, key=lambda row: row["dissipation_proxy"])
+    rows = sorted(rows, key=lambda row: row["average_entropy_production"])
 
     fig, ax = plt.subplots(figsize=(6.2, 4.8))
     ax.plot(
-        [row["dissipation_proxy"] for row in rows],
+        [row["average_entropy_production"] for row in rows],
         [row["average_error"] for row in rows],
         marker="o",
         linewidth=1.8,
@@ -141,12 +141,12 @@ def plot_fig3c_tradeoff(rows, output_path):
     for row in rows:
         ax.annotate(
             fr"$\epsilon_1={row['epsilon1']:g}$",
-            (row["dissipation_proxy"], row["average_error"]),
+            (row["average_entropy_production"], row["average_error"]),
             textcoords="offset points",
             xytext=(4, 4),
             fontsize=8,
         )
-    ax.set_xlabel(r"Average dissipation proxy $\langle\Sigma\rangle$")
+    ax.set_xlabel(r"Average entropy production $\langle\Sigma\rangle$")
     ax.set_ylabel(r"Average decoding error $\langle\xi\rangle$")
     ax.set_title("Fig. 3C Reconstruction: Error-Dissipation Trade-Off")
     ax.set_yscale("log")

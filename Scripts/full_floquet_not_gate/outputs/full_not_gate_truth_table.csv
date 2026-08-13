@@ -1,0 +1,5 @@
+architecture,input_bit,beta1,expected_output_bit,time,beta_virtual,target_output_beta,output_excited_population,output_beta_effective,decoded_output_bit,is_correct,drive_power
+direct_three_qubit,0,1.0,1,120.0,101.5,1.9999607626096199,0.4501656783282244,2.0000131045495375,1,True,0.0
+floquet_buffered_three_qubit,0,1.0,1,120.0,101.5,1.9999607626096199,0.45163600065044224,1.9406275173119214,1,True,0.0001843941081519671
+direct_three_qubit,1,2.0,0,120.0,-98.5,1.000052569303521,0.475020127368828,1.0000274746635056,0,True,0.0
+floquet_buffered_three_qubit,1,2.0,0,120.0,-98.5,1.000052569303521,0.47575588042239597,0.9705258647031696,0,True,9.244269275254495e-05

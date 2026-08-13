@@ -1,0 +1,52 @@
+MSc thermodynamic Floquet-buffer project decision report
+========================================================
+
+Verdict: GKSL-FULL-LADDER-PASS
+Next step: Use the passing three-qubit GKSL truth-table surrogate as the thesis prototype, then replace the output bath by OQuPy/PT-MPO or HEOM for the structured-bath backend.
+
+Numerical health:
+- dt convergence pass: True
+- memory convergence pass: True
+- non-Markovian summary available: True
+- max trace deviation: 1.884e-05
+- max Hermiticity error: 5.011e-07
+
+Floquet bridge:
+- summary available: True
+- direct final trace distance: 0.135336
+- buffered final trace distance: 0.181774
+- trace-distance gain: 0.046438
+- integrated drive-work proxy: 0.460415
+
+Floquet sweep:
+- sweep available: True
+- positive rows: 14 / 15
+- best trace-distance gain: 0.711315
+
+Floquet ablation:
+- ablation available: True
+- positive rows: 8 / 9
+- best ablation case: weak_system_buffer_coupling
+- best ablation gain: 0.711315
+- no-drive gain: -0.149461
+
+Thermodynamic audit:
+- audit available: True
+- provisional rows: 1
+- unsafe-beyond-baseline rows: 1
+
+Full three-qubit NOT surrogate:
+- summary available: True
+- passing architectures: 2 / 2
+- buffered truth-table accuracy: 1.000
+- buffered final trace distance: 0.024120
+
+Phase V PT-MPO/TEMPO structured backend:
+- summary available: True
+- passing architectures: 2 / 2
+- best truth-table accuracy: 1.000
+- max trace deviation: 2.224e-06
+- max Hermiticity error: 6.094e-07
+
+Programming caveat:
+Do not jump directly to a full three-qubit multi-bath gate unless this report is at least RISKY-GO. Full heat/work claims need a separate thermodynamic audit because strong coupling, memory, and drive work make reduced-system currents ambiguous.

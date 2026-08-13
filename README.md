@@ -1,6 +1,45 @@
 # Repository: Autonomous Quantum Thermal Machines & Thermodynamic Computing
 
 This repository contains numerical implementations for studying open quantum systems, non-Markovian environmental dynamics, and autonomous thermodynamic logic gates. The code scales from standard spin-boson models to specialized tensor network architectures  using libraries like (**OQuPy/TEMPO , QUTIP , ITENSOR**) and exact replication of the "thermodynamic neuron" perceptron framework.
+
+## Current Research Structure
+
+The clean project order is tracked in [ROADMAP.md](ROADMAP.md).
+
+Current phase status:
+
+- **Phase 1 complete:** baseline thermodynamic-neuron reconstruction in `Scripts/baseline_paper_reconstruction/`.
+- **Phase 2 started:** single-qubit structured-bath OQuPy benchmark in `Scripts/non_markovian_extension/`.
+- **Phase 3 started:** small convergence scan for time step, memory time, and SVD tolerance.
+- **Phase 4 planned:** full 3-qubit NOT/NOR gate under structured baths.
+- **Floquet bridge started:** driven buffer prototype in `Scripts/floquet_buffer_extension/`.
+- **Floquet screening added:** parameter sweep and decision report for deciding when the full gate attempt is justified.
+- **Gate prototype added:** NOT-gate screening layer in `Scripts/thermodynamic_floquet_gate_prototype/`.
+- **Fallbacks planned:** single-qubit thermodynamic protocol, reaction-coordinate benchmark, or tensor-network geometry study.
+
+Clean terminal commands:
+
+```bash
+scripts/run_baseline.sh
+scripts/run_non_markovian_smoke.sh
+scripts/run_convergence_scan.sh
+scripts/run_convergence_scan_strong.sh
+scripts/run_dt_convergence_scan.sh
+scripts/run_memory_convergence_scan.sh
+scripts/run_non_markovian_research.sh
+scripts/run_floquet_buffer.sh
+scripts/run_floquet_buffer_sweep.sh
+scripts/run_floquet_buffer_ablation.sh
+scripts/run_thermodynamic_audit.sh
+scripts/run_project_decision.sh
+scripts/run_thermodynamic_floquet_gate_prototype.sh
+scripts/run_full_floquet_not_gate.sh
+scripts/run_phase_v_structured_backend.sh
+scripts/run_phase_v_structured_backend_research.sh
+```
+
+Use `run_non_markovian_smoke.sh` for quick checks. Use `run_non_markovian_research.sh` only when you are ready for a heavier OQuPy run.
+
 ## 📂 Code Files Overview
 
 The repository consists of four distinct simulation components. Together, they demonstrate how to model open quantum systems from a basic single-qubit scenario up to advanced, multi-reservoir autonomous quantum logic networks.

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.synctex.gz
+
+papers_to_read_implemet/aux/
+**/.matplotlib/

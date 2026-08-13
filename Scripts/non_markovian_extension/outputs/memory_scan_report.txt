@@ -1,0 +1,10 @@
+Phase 3 convergence report
+==========================
+
+PASS: last two runs agree within 1.0e-03 in final sigma_z (last step drift=3.883e-04).
+
+Rows:
+- dt=0.1, memory=0.4, tol=1e-06, t_end=1.0, final_sigma_z=0.70983769, step_drift=0.000e+00, runtime=0.55s
+- dt=0.1, memory=0.6, tol=1e-06, t_end=1.0, final_sigma_z=0.70440382, step_drift=5.434e-03, runtime=0.94s
+- dt=0.1, memory=0.8, tol=1e-06, t_end=1.0, final_sigma_z=0.70195104, step_drift=2.453e-03, runtime=1.40s
+- dt=0.1, memory=1.0, tol=1e-06, t_end=1.0, final_sigma_z=0.70156276, step_drift=3.883e-04, runtime=0.95s
