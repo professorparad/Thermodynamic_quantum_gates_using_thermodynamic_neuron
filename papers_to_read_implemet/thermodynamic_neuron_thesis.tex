@@ -443,6 +443,18 @@ $\epsilon_z\ll\epsilon_1$; larger $\epsilon_z$ blurs the parameter roles. \\
 $\dot Q_\alpha=\Tr(H_S\mathcal D_\alpha\rho)$ &
 Weak coupling; reduced--system heat currents ambiguous at strong
 coupling. \\
+(A12) & Spin-chain bath proxy &
+Each chain site has $d=2$ instead of a converged bosonic cutoff &
+Tests tensor geometry and entanglement compression, not a quantitative
+bosonic reservoir. \\
+(A13) & Finite graph/time window &
+$L\leq4$ and $0\leq t\leq4$ in the exact graph benchmark &
+Valid before boundary reflections dominate; does not establish a
+periodic or thermodynamic steady state. \\
+(A14) & Schmidt truncation &
+Retain the smallest $\chi$ with discarded weight at most $10^{-10}$ &
+Controlled state-compression criterion; observables still require a
+separate convergence test in $\chi$. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1189,7 +1201,7 @@ contact at the same bath parameters.}
 \label{fig:heom-validation}
 \end{figure}
 
-\paragraph{HEOM depth scaling and MPS dimension scaling.}
+\paragraph{HEOM depth scaling and exact-state MPS representability.}
 The HEOM hierarchy was also swept over depths $N_{\mathrm{tier}}=2,3,4,5$
 on a shortened scaling run. At depth $4$ the direct structured subsystem
 has $D=0.522348$ with depth--5 drift $5.62\times10^{-8}$, while the
@@ -1197,9 +1209,10 @@ Floquet-buffered subsystem has $D=0.855945$ with drift
 $4.46\times10^{-7}$. Thus the HEOM result is already stable by depths
 $3$--$4$ for this benchmark.
 
-For the tensor-network estimate, each reservoir was replaced by a finite
-spin chain and the required MPS bond dimension was estimated from the
-Schmidt spectra of the exact evolved state. For bath-chain lengths
+For the preliminary tensor-network estimate, each reservoir was replaced
+by a finite spin chain.  The state was propagated exactly and the bond
+dimension needed to represent it as an MPS was inferred from its Schmidt
+spectra; this was not an MPS time evolution. For bath-chain lengths
 $L=2,\ldots,6$, the direct subsystem required maximum bond dimension
 $\chi=2,4,4,6,6$, while the Floquet-buffered chain required
 $\chi=4,4,6,6,6$. The buffered geometry therefore costs an extra local
@@ -1211,8 +1224,8 @@ $D=0.748064$ and the buffered chain gives $D=0.791114$.
 \includegraphics[width=0.86\linewidth]{heom_mps_scaling.png}
 \caption{Scaling validation. Left: HEOM convergence versus hierarchy
 depth, measured by trace-distance drift relative to depth $5$. Right:
-estimated MPS bond dimension versus structured-bath chain length for the
-direct subsystem and the Floquet-buffered subsystem.}
+exact-state MPS representability versus structured-bath chain length for
+the direct subsystem and the Floquet-buffered subsystem.}
 \label{fig:heom-mps-scaling}
 \end{figure}
 
@@ -1534,16 +1547,20 @@ reservoir to a one-dimensional chain,
 H_{B_\alpha}+H_{SB_\alpha}
 \longrightarrow
 \sum_{j=0}^{N_\alpha-1}\omega_{\alpha j}a_{\alpha j}^{\dagger}a_{\alpha j}
+ +
 \sum_{j=0}^{N_\alpha-2}t_{\alpha j}
 (a_{\alpha j}^{\dagger}a_{\alpha,j+1}+\mathrm{h.c.})
  + V_{\alpha}(a_{\alpha0}+a_{\alpha0}^{\dagger}).
 \label{eq:mps-chain-map}
 \end{equation}
-The direct geometry is naturally an MPS if the bath chains are ordered
-after the gate degrees of freedom. The buffered geometry is often better
-as a TTN: the collector/modulator sits at the root, and the reference,
-input, output, and modulator bath chains are separate branches. This
-avoids forcing all bath entanglement through one artificial MPS bond.
+A one-branch direct benchmark is naturally an MPS if the bath chain is
+ordered after the gate degrees of freedom.  For the full three-reservoir
+machine, both direct and buffered geometries are naturally factor-tree
+TTNs: the three-body interaction sits at the root, and the reference,
+input, and output bath chains form separate branches.  The buffer only
+subdivides the output branch.  This avoids forcing several independent
+bath correlations through one artificial MPS bond, as quantified in
+Section~\ref{sec:tn-graph}.
 
 \begin{center}
 \small
@@ -1577,6 +1594,251 @@ and buffered models reproduce the intended Boolean truth table; (ii) the
 buffered margin or distinguishability is positive after convergence; and
 (iii) the sign of the buffer advantage does not flip when moving from
 GKSL to HEOM and then to the MPS/TTN structured-bath simulation.
+
+\section{Tensor networks and graph geometry}
+\label{sec:tn-graph}
+
+The earlier single-branch calculation asks how large an MPS must be once
+an ordering has already been chosen.  The full gate introduces a prior
+question: \emph{which tensor-network graph should be used?}  This is not
+cosmetic.  The machine has three reservoir branches joined by one
+three-body interaction, so flattening it into a line can force otherwise
+independent branch correlations through the same virtual bond
+\cite{Schollwock2011,Orus2014}.  This
+section derives that graph cost and measures it on exact evolved states.
+
+\subsection{Hamiltonian hypergraph, primal graph, and factor tree}
+Let the physical vertices be
+\begin{equation}
+ V=\{C_0,C_1,C_z,F,B_{\alpha j}:\alpha\in\{0,1,z\}\},
+ \label{eq:tn-vertices}
+\end{equation}
+where $F$ is omitted for direct contact.  Pair interactions give ordinary
+edges, but the gate term is the hyperedge
+\begin{equation}
+ e_3=\{C_0,C_1,C_z\},\qquad
+ H_3=g_3\left(\sigma_+^{(0)}\sigma_-^{(1)}\sigma_-^{(z)}
+ +\sigma_-^{(0)}\sigma_+^{(1)}\sigma_+^{(z)}\right).
+ \label{eq:tn-three-body-hyperedge}
+\end{equation}
+There are two standard graph representations.  The \emph{primal graph}
+replaces $e_3$ by the triangle
+$(C_0,C_1),(C_0,C_z),(C_1,C_z)$.  It contains one cycle and has treewidth
+$2$.  The \emph{incidence} or factor graph instead introduces one
+nonphysical factor vertex $U_3$ and connects it separately to
+$C_0$, $C_1$, and $C_z$.  After each reservoir is chain mapped,
+this incidence graph is a tree and therefore has treewidth $1$.
+
+This replacement is exact at the operator level rather than an
+approximation.  Equation~\eqref{eq:tn-three-body-hyperedge} is a sum of
+two product operators, so the central Hamiltonian factor has canonical
+polyadic operator rank $2$.  The passive buffer merely subdivides the
+output edge as $C_z-F-B_{z1}$.  The Floquet term
+\begin{equation}
+ H_D(t)=A\cos(\Omega t)\sigma_x^{(F)}
+ \label{eq:tn-local-floquet-factor}
+\end{equation}
+is local on $F$; consequently it adds no spatial graph edge and cannot
+change treewidth.  It can still change the numerical bond dimensions by
+creating more entanglement during time evolution.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.99\linewidth]{tensor_network_graph_topologies.png}
+\caption{Tensor-network geometry of the three-reservoir machine.  The
+purple $U_3$ tensor represents the three-body interaction.  Direct and
+Floquet-buffered incidence graphs are trees; the buffer subdivides one
+branch without creating a cycle.  The right panel shows a graph-optimized
+MPS ordering, where curved interaction edges reveal the price of forcing
+the branched graph onto one path.}
+\label{fig:tn-graph-topologies}
+\end{figure}
+
+\subsection{Deriving the MPS ordering cost}
+An MPS first chooses a bijection
+$\pi:V\rightarrow\{1,\ldots,n\}$.  Its $k$th bond separates the prefix
+\begin{equation}
+ S_k^\pi=\{v:\pi(v)\leq k\}
+ \label{eq:tn-prefix-set}
+\end{equation}
+from its complement.  For an interaction graph $G=(V,E)$, define the
+edge boundary and ordering cutwidth
+\begin{align}
+ \delta_G(S)&=\{(u,v)\in E:u\in S,\ v\notin S\},\\
+ c(\pi)&=\max_{1\leq k<n}|\delta_G(S_k^\pi)|.
+ \label{eq:tn-cutwidth}
+\end{align}
+The bandwidth
+\begin{equation}
+ b(\pi)=\max_{(u,v)\in E}|\pi(u)-\pi(v)|
+ \label{eq:tn-bandwidth}
+\end{equation}
+measures the longest interaction in the linear layout.  Cutwidth controls
+how many interactions can create entanglement across one MPS bond, while
+bandwidth controls how many swap gates or long-range MPO channels are
+needed by a nearest-neighbour implementation.  They are graph proxies,
+not substitutes for measuring the evolved state.
+
+For a pure state, the Schmidt decomposition at cut $k$ is
+\begin{equation}
+ |\psi\rangle=\sum_{r=1}^{R_k}s_{k r}
+ |L_{k r}\rangle|R_{k r}\rangle,
+ \qquad \sum_r s_{k r}^2=1.
+ \label{eq:tn-schmidt}
+\end{equation}
+Given an allowed discarded weight $\varepsilon$, the minimal numerical
+bond dimension is
+\begin{equation}
+ \chi_k^\star(\varepsilon)
+ =\min\left\{q:\sum_{r>q}s_{k r}^2\leq\varepsilon\right\},
+ \qquad
+ \chi_{\rm MPS}^\star=\max_k\chi_k^\star .
+ \label{eq:tn-minimal-chi}
+\end{equation}
+The bond entropy
+\begin{equation}
+ S_k=-\sum_r s_{k r}^2\log_2 s_{k r}^2
+ \label{eq:tn-bond-entropy}
+\end{equation}
+obeys $S_k\leq\log_2\chi_k$.  For local evolution, entanglement can be
+generated across the cut only by terms in $\delta_G(S_k)$; schematically,
+\begin{equation}
+ \left|\frac{\mathrm d S_k}{\mathrm dt}\right|
+ \lesssim c_{\mathrm{ent}}\sum_{e\in\delta_G(S_k)}\|h_e\|\log d_e .
+ \label{eq:tn-entanglement-rate-bound}
+\end{equation}
+Thus minimizing $c(\pi)$ is a principled ordering heuristic, although
+destructive interference and unequal couplings mean that the Schmidt
+spectrum remains the final numerical test.
+
+If the MPS bond dimensions are $\chi_0=\chi_n=1$ and
+$\chi_1,\ldots,\chi_{n-1}$, its raw tensor-entry count is
+\begin{equation}
+ P_{\rm MPS}=\sum_{k=1}^{n}d_k\chi_{k-1}\chi_k .
+ \label{eq:tn-mps-parameters}
+\end{equation}
+This count is representation dependent and includes gauge redundancy,
+but it is a useful memory and contraction-cost proxy when comparing two
+topologies for the same state.
+
+\subsection{Why a topology-matched TTN is different}
+For the factor-tree topology $T$, removing an edge $e$ partitions the
+physical leaves into $A_e$ and $\bar A_e$.  The smallest exact TTN bond
+on that edge is the Schmidt rank of this bipartition; with truncation,
+\begin{equation}
+ \chi_e^\star(\varepsilon)
+ =\min\left\{q:\sum_{r>q}s_{e r}^2\leq\varepsilon\right\}.
+ \label{eq:tn-ttn-chi}
+\end{equation}
+Every reservoir branch is disconnected from the rest by one factor-tree
+edge, so its graph boundary is one independently of chain length.  A
+linear MPS cannot place all three branches on opposite sides of the
+central interaction simultaneously.  The TTN therefore trades the path
+bottleneck for a higher-degree root tensor.  Its raw entry count is
+\begin{equation}
+ P_{\rm TTN}=\sum_{v\in T}d_v\prod_{e\ni v}\chi_e,
+ \qquad d_{U_3}=1,\qquad d_v=2\text{ for a spin site}.
+ \label{eq:tn-ttn-parameters}
+\end{equation}
+The root product in Eq.~\eqref{eq:tn-ttn-parameters} is the principal TTN
+cost.  A TTN is advantageous only if the reduction of branch bond
+dimensions compensates for this product; the exact-state experiment
+below checks that condition directly.
+
+\subsection{Exact graph-state experiment and Quimb MPS compression}
+The reproducible code in
+\texttt{Scripts/tensor\_network\_graph\_analysis/} performs two tests.
+First, it builds direct, passive-buffer, and Floquet-buffer graphs for
+$L=1,\ldots,10$, evaluates an interleaved ordering, and searches
+deterministically over breadth-first, depth-first, reverse
+Cuthill--McKee, reversed, and local-swap orderings.  At $L=10$ all three
+architectures have primal-treewidth upper bound $2$ and factor-treewidth
+$1$.  The interleaved MPS has cutwidth $4$, the optimized MPS has
+cutwidth $3$, and the factor-tree TTN has separator width $1$.  These
+widths remain constant with $L$ because extending a branch adds vertices
+but no new junction.
+
+Second, a state-level benchmark uses the finite spin Hamiltonian
+\begin{align}
+ H_{\rm geom}(t)
+ &=\frac12\sum_v\omega_v\sigma_z^{(v)}+H_3
+ +\sum_{(u,v)\in E_2}J_{uv}\sigma_x^{(u)}\sigma_x^{(v)}
+ +\mathbf{1}_{\rm Floquet}A\cos(\Omega t)\sigma_x^{(F)} .
+ \label{eq:tn-geometry-hamiltonian}
+\end{align}
+The chosen dimensionless values are
+$(\omega_0,\omega_1,\omega_z,\omega_F)=(2,1,1,1)$,
+$\omega_{B_j}=0.82+0.04j$, $g_3=0.18$, contact coupling $0.14$,
+$C_z$--$F$ coupling $0.12$,
+$J_j=0.11/[1+0.15(j-1)]$, $A=0.45$, and $\Omega=1.3$.
+Sparse exact propagation uses $24$ midpoint steps over $0\leq t\leq4$.
+The largest calculations contain $15$ physical spins for direct contact
+and $16$ for buffered contact.  Schmidt spectra are sampled every four
+steps using discarded-weight tolerance $\varepsilon=10^{-10}$.  The
+final state is also factorized and compressed as an MPS using Quimb
+\cite{Gray2018}.
+
+\begin{table}[H]\centering\small
+\caption{Maximum tolerance-controlled tensor requirements for exactly
+evolved states over the $L=4$ time
+window.  $P$ is the maximum raw tensor-entry count.  $F_{\chi=8}$ is the
+final-state fidelity after graph-ordered Quimb MPS compression.}
+\label{tab:tn-exact-results}
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+Architecture & $\chi_{\rm int}$ & $\chi_{\rm opt}$ & $\chi_{\rm TTN}$ &
+$P_{\rm opt}$ & $P_{\rm TTN}$ & $F_{\chi=8}$ \\
+\midrule
+Direct & 61 & 23 & 10 & 4332 & 1702 & 0.9999693 \\
+Passive buffer & 66 & 23 & 10 & 4650 & 1740 & 0.9999745 \\
+Floquet buffer & 65 & 25 & 10 & 4986 & 1646 & 0.9999718 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ordering effect is already substantial: relative to interleaving,
+graph optimization reduces the maximum required MPS bond from $61$ to
+$23$ for direct contact and from $65$ to $25$ for the Floquet buffer.
+The topology-matched TTN reduces the maximum to $10$.  Its raw entry
+count is smaller than optimized MPS by $60.7\%$ (direct), $62.6\%$
+(passive), and $67.0\%$ (Floquet).  The Floquet drive leaves all graph
+widths unchanged but raises the observed optimized-MPS maximum from $23$
+for the passive buffer to $25$ for the driven buffer.  Geometry and
+dynamics are therefore distinct sources of cost.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.99\linewidth]{mps_ttn_graph_scaling.png}
+\caption{Graph and exact-state tensor-network benchmark.  Top left:
+MPS cutwidth depends on ordering, while every factor-tree TTN edge is a
+one-edge separator.  Top right: maximum required Schmidt bond over the
+exact time window.  Bottom left: raw tensor entries at $L=4$; dashed TTN
+curves remain below optimized MPS curves.  Bottom right: graph-ordered
+Quimb MPS compression error, showing that $\chi=8$ already retains more
+than $0.9999$ fidelity despite the stricter $10^{-10}$ discarded-weight
+ranks reported in the table.}
+\label{fig:mps-ttn-graph-scaling}
+\end{figure}
+
+\subsection{What this establishes and what remains}
+The calculation establishes four points.  First, the natural mathematical
+object is a hypergraph/factor graph, not a single bath chain.  Second,
+site ordering is an algorithmic variable: a poor ordering can cost more
+than adding the physical buffer.  Third, the factor-tree TTN is the
+lowest-rank exact representation tested for the full three-branch
+geometry.  Fourth, an optimized MPS remains an excellent validation
+backend because a modest $\chi=8$ gives final-state fidelity above
+$0.9999$ in all three cases.
+
+This is deliberately not presented as a converged thermodynamic-gate
+simulation.  Approximations (A12)--(A14) replace bosonic modes by spins,
+use a pure product preparation, stop before long-chain steady-state
+physics, and factorize exact small-system states instead of evolving the
+tensor network variationally.  The next tensor-network experiment should
+therefore use orthogonal-polynomial chain coefficients, thermofield
+purification of each thermal bath, two-site TDVP or TEBD, and independent
+convergence in $(L,d,\chi,\Delta t)$.  The graph result gives a concrete
+backend decision for that calculation: use MPS for single branches and
+cross-checks, but use the factor-tree TTN as the primary full-gate
+geometry.
 
 \section{Architecture decision and CMOS--inverter correspondence}
 \label{sec:architecture-decision}
@@ -2198,6 +2460,18 @@ tunneling,'' \emph{Phys.\ Rep.} \textbf{304}, 229 (1998).
 \bibitem{Chin2010} A.~W.~Chin, \'{A}.~Rivas, S.~F.~Huelga, and M.~B.~Plenio, “Exact mapping between system‑reservoir quantum models and semi‑infinite discrete chains,” J.\ Math.\ Phys.\ \textbf{51}, 092109 (2010).
 
 \bibitem{Prior2010} J.~Prior, A.~W.~Chin, S.~F.~Huelga, and M.~B.~Plenio, “Efficient simulation of strong system‑environment interactions,” Phys.\ Rev.\ Lett.\ \textbf{105}, 050404 (2010).
+
+\bibitem{Schollwock2011} U.~Schollw\"ock, ``The density-matrix
+renormalization group in the age of matrix product states,''
+\emph{Ann.\ Phys.} \textbf{326}, 96--192 (2011).
+
+\bibitem{Orus2014} R.~Or\'us, ``A practical introduction to tensor
+networks: Matrix product states and projected entangled pair states,''
+\emph{Ann.\ Phys.} \textbf{349}, 117--158 (2014).
+
+\bibitem{Gray2018} J.~Gray, ``quimb: a Python package for quantum
+information and many-body calculations,'' \emph{J.\ Open Source Softw.}
+\textbf{3}, 819 (2018).
 
 \bibitem{Wolpert2022} D.~H.~Wolpert, “Stochastic thermodynamics of computation,” J.\ Stat.\ Phys.\ \textbf{187}, 10 (2022).
 

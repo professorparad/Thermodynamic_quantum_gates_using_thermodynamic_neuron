@@ -1,0 +1,7 @@
+Tensor-network generated-output acceptance checks
+=================================================
+
+PASS: graph: 90 layouts, factor treewidth 1, optimized path no worse than interleaving
+PASS: state: 252 exact Schmidt audits, TTN <= optimized MPS <= interleaved MPS at L=4
+PASS: compression: Quimb fidelity increases with bond cap and exceeds 0.9999 at chi=8
+PASS: figures: topology and scaling plots are present and nonempty

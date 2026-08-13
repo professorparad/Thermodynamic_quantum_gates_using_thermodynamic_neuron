@@ -1,0 +1,33 @@
+Tensor-network and graph-geometry benchmark
+===========================================
+
+Graph result:
+- Replacing the three-body interaction by one factor tensor makes the complete machine-plus-chain incidence graph a tree (treewidth 1).
+- direct: primal-treewidth upper bound=2, optimized MPS cutwidth=3, interleaved cutwidth=4, TTN separator=1.
+- passive_buffer: primal-treewidth upper bound=2, optimized MPS cutwidth=3, interleaved cutwidth=4, TTN separator=1.
+- floquet_buffer: primal-treewidth upper bound=2, optimized MPS cutwidth=3, interleaved cutwidth=4, TTN separator=1.
+
+Exact sparse-evolution state result at L=4:
+- direct, interleaved_mps: max chi=61, max entropy=1.226080 bits, max raw entries=24984.
+- direct, graph_optimized_mps: max chi=23, max entropy=1.162060 bits, max raw entries=4332.
+- direct, factor_tree_ttn: max chi=10, max entropy=0.967094 bits, max raw entries=1702.
+- passive_buffer, interleaved_mps: max chi=66, max entropy=1.249397 bits, max raw entries=33544.
+- passive_buffer, graph_optimized_mps: max chi=23, max entropy=1.185852 bits, max raw entries=4650.
+- passive_buffer, factor_tree_ttn: max chi=10, max entropy=0.972545 bits, max raw entries=1740.
+- floquet_buffer, interleaved_mps: max chi=65, max entropy=1.242186 bits, max raw entries=33280.
+- floquet_buffer, graph_optimized_mps: max chi=25, max entropy=1.178523 bits, max raw entries=4986.
+- floquet_buffer, factor_tree_ttn: max chi=10, max entropy=0.970907 bits, max raw entries=1646.
+
+Quimb MPS compression at the final time:
+- direct, chi_cap=2: fidelity=0.9253227911, relative_error=2.759e-01.
+- direct, chi_cap=4: fidelity=0.9941225173, relative_error=7.672e-02.
+- direct, chi_cap=8: fidelity=0.9999693278, relative_error=5.538e-03.
+- passive_buffer, chi_cap=2: fidelity=0.9222829577, relative_error=2.816e-01.
+- passive_buffer, chi_cap=4: fidelity=0.9949155954, relative_error=7.135e-02.
+- passive_buffer, chi_cap=8: fidelity=0.9999744644, relative_error=5.053e-03.
+- floquet_buffer, chi_cap=2: fidelity=0.9264872165, relative_error=2.737e-01.
+- floquet_buffer, chi_cap=4: fidelity=0.9953444313, relative_error=6.827e-02.
+- floquet_buffer, chi_cap=8: fidelity=0.9999718265, relative_error=5.308e-03.
+
+Interpretation:
+The Floquet term is local on the buffer, so it does not change spatial graph treewidth. It can nevertheless increase the numerical Schmidt ranks by generating more entanglement. A topology-matched TTN isolates each reservoir branch with a single graph edge, whereas an MPS must choose a linear ordering and can carry several branch correlations through one bond. The calculation is an exact small-network evolution followed by exact Schmidt analysis and Quimb MPS factorization; it is not yet a large-chain TDVP/TTN time evolution.

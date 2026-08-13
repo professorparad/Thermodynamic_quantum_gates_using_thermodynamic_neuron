@@ -284,7 +284,7 @@ def _write_report(path, heom_rows, mps_rows, energy_rows):
                 f"drift={row['depth5_final_state_drift']:.3e}, "
                 f"runtime={row['runtime_seconds']:.3f}s\n"
             )
-        handle.write("\nMPS dimension scaling:\n")
+        handle.write("\nExact-state Schmidt-rank scaling (MPS representability proxy):\n")
         for row in mps_rows:
             handle.write(
                 f"- {row['backend']} L={row['chain_length']}: "

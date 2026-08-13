@@ -17,7 +17,8 @@ Current phase status:
 - **Gate prototype added:** NOT-gate screening layer in `Scripts/thermodynamic_floquet_gate_prototype/`.
 - **HEOM output stage validated:** converged structured-bath dynamics, Floquet phase sweeps, process tomography, information backflow, disorder sampling, and work accounting in `Scripts/heom_structured_bath_validation/`.
 - **Architecture comparison added:** direct, passive-buffer, and driven-buffer HEOM results are separated quantitatively and compared with an idealized CMOS inverter transfer model.
-- **Fallbacks planned:** single-qubit thermodynamic protocol, reaction-coordinate benchmark, or tensor-network geometry study.
+- **Tensor-network graph benchmark added:** factor-graph treewidth, MPS ordering cutwidth, exact Schmidt ranks, TTN bond requirements, and Quimb MPS compression in `Scripts/tensor_network_graph_analysis/`.
+- **Next tensor-network phase:** thermofield-initialized bosonic chains evolved with TDVP/TEBD on the factor-tree geometry.
 
 Clean terminal commands:
 
@@ -44,6 +45,8 @@ scripts/run_heom_mps_scaling.sh
 scripts/run_advanced_heom_experiments.sh
 scripts/run_architecture_cmos_comparison.sh
 scripts/run_heom_output_checks.sh
+scripts/run_tensor_network_graph_analysis.sh
+scripts/run_tensor_network_checks.sh
 ```
 
 Use `run_non_markovian_smoke.sh` for quick checks. Use `run_non_markovian_research.sh` only when you are ready for a heavier OQuPy run.
@@ -99,4 +102,4 @@ This extension would be numerically quite heavy because engineering non markovia
 To run these simulations, you will need `Python 3.8+` along with standard scientific computing libraries and the specialized **OQuPy** package for time-evolving matrix product operator simulations.
 
 ```bash
-pip install numpy matplotlib oqupy qutip
+pip install numpy scipy matplotlib networkx quimb oqupy qutip
